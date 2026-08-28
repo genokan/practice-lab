@@ -11,6 +11,11 @@ image_path="$image_directory/$image_name"
 mkdir -p "$image_directory"
 
 if [ ! -f "$image_path" ]; then
+  if [ -f "$image_path.part" ] && ! printf '%s  %s\n' "$image_sha256" "$image_path.part" | shasum -a 256 --check --status; then
+    printf 'Discarding checksum-failing temporary image artifact\n' >&2
+    rm -f "$image_path.part"
+  fi
+
   printf 'Downloading %s\n' "$image_name"
   curl --continue-at - --fail --location --retry 3 --silent --show-error --output "$image_path.part" "$image_url"
   printf '%s  %s\n' "$image_sha256" "$image_path.part" | shasum -a 256 --check --status
