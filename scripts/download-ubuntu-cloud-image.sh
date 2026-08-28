@@ -11,7 +11,8 @@ image_path="$image_directory/$image_name"
 mkdir -p "$image_directory"
 
 if [ ! -f "$image_path" ]; then
-  curl --fail --location --retry 3 --output "$image_path.part" "$image_url"
+  printf 'Downloading %s\n' "$image_name"
+  curl --continue-at - --fail --location --retry 3 --silent --show-error --output "$image_path.part" "$image_url"
   printf '%s  %s\n' "$image_sha256" "$image_path.part" | shasum -a 256 --check --status
   mv "$image_path.part" "$image_path"
 fi
