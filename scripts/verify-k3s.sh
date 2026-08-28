@@ -11,7 +11,9 @@ cleanup() {
 trap cleanup EXIT
 
 "$kubectl_command" get nodes
-"$kubectl_command" rollout status deployment/coredns -n kube-system --timeout=120s
+for deployment in coredns traefik local-path-provisioner metrics-server; do
+  "$kubectl_command" rollout status "deployment/$deployment" -n kube-system --timeout=120s
+done
 "$kubectl_command" get pods -n kube-system
 "$kubectl_command" run "$test_pod" \
   --image=busybox:1.37.0 \

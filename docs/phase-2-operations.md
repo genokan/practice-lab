@@ -37,9 +37,9 @@ operations guide.
 make verify-k3s
 ```
 
-The verification checks the Ready node, CoreDNS rollout, system pods, and an ephemeral
-pod that resolves cluster DNS and reaches the public internet. The test pod is removed
-when the script exits.
+The verification checks the Ready node, CoreDNS, Traefik, metrics-server, and
+local-path-provisioner rollouts, then runs an ephemeral pod that resolves cluster DNS
+and reaches the public internet. The test pod is removed when the script exits.
 
 ## Re-run behavior
 
