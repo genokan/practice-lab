@@ -36,6 +36,14 @@ network_xml=/etc/libvirt/qemu/networks/default.xml
 pool_name=default
 pool_target=/var/lib/libvirt/images
 
+network_is_active() {
+  virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "yes" ? 0 : 1) }'
+}
+
+pool_is_active() {
+  virsh pool-info "$pool_name" | awk -F: '/^State:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "running" ? 0 : 1) }'
+}
+
 if ! virsh net-info "$network_name" >/dev/null 2>&1; then
   # Fedora restricts /etc/libvirt to root. Read the existing definition without
   # copying it to a persistent temporary file, then define it as the libvirt user.
@@ -43,8 +51,9 @@ if ! virsh net-info "$network_name" >/dev/null 2>&1; then
 fi
 
 virsh net-autostart "$network_name"
-if ! virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "yes" ? 0 : 1) }'; then
-  virsh net-start "$network_name"
+if ! network_is_active; then
+  # Autostart can race with this explicit request; accept an already-active result.
+  virsh net-start "$network_name" || network_is_active
 fi
 
 if ! virsh pool-info "$pool_name" >/dev/null 2>&1; then
@@ -53,8 +62,8 @@ if ! virsh pool-info "$pool_name" >/dev/null 2>&1; then
 fi
 
 virsh pool-autostart "$pool_name"
-if ! virsh pool-info "$pool_name" | awk -F: '/^State:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "running" ? 0 : 1) }'; then
-  virsh pool-start "$pool_name"
+if ! pool_is_active; then
+  virsh pool-start "$pool_name" || pool_is_active
 fi
 
 virsh net-info "$network_name"
@@ -62,7 +71,7 @@ virsh pool-info "$pool_name"
 REMOTE
     ;;
   status)
-    ssh "$libvirt_host" 'export LIBVIRT_DEFAULT_URI=qemu:///system; virsh net-info default; virsh pool-info default; virsh list --all; virsh vol-list default'
+    ssh "$libvirt_host" 'export LIBVIRT_DEFAULT_URI=qemu:///system; virsh net-info default || true; if virsh pool-info default; then virsh vol-list default; fi; virsh list --all'
     ;;
   destroy)
     ssh "$libvirt_host" 'bash -s' <<'REMOTE'
