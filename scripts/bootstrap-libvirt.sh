@@ -33,8 +33,9 @@ pool_name=default
 pool_target=/var/lib/libvirt/images
 
 if ! virsh net-info "$network_name" >/dev/null 2>&1; then
-  test -r "$network_xml"
-  virsh net-define "$network_xml"
+  # Fedora restricts /etc/libvirt to root. Read the existing definition without
+  # copying it to a persistent temporary file, then define it as the libvirt user.
+  sudo -n cat "$network_xml" | virsh net-define /dev/stdin
 fi
 
 virsh net-autostart "$network_name"
