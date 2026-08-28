@@ -26,8 +26,3 @@ output "control_plane_ssh_command" {
   description = "SSH command for the generated Ansible user from the Mac."
   value       = "ssh -J bcant@mb1.opsguy.io ansible@${one(local.control_plane_ipv4_addresses)}"
 }
-
-output "ubuntu_image_sha256" {
-  description = "Pinned SHA-256 of the locally verified Ubuntu cloud image."
-  value       = local.ubuntu_image_sha256
-}

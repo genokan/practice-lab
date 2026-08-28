@@ -11,11 +11,12 @@ to the Mac's verified SSH client. The VM receives a DHCP lease from libvirt;
 Terraform exposes that address and `make inventory` generates the ignored Ansible
 inventory with an SSH jump through MB1.
 
-## Image pin
+## Image verification
 
-The image download script retrieves the Ubuntu Noble ARM64 cloud image and validates
-SHA-256 `afa139bac6f2629e1f2f8f34215f3a9ad9779801bcb945521ba1a45016743f` before it
-is used. The image is stored in ignored `artifacts/images/` and is not committed.
+The image download script retrieves Ubuntu's official `SHA256SUMS` manifest from the
+same Noble `current` directory, then validates the ARM64 cloud image against that
+manifest before it is used. The verified hash is printed at completion. The image is
+stored in ignored `artifacts/images/` and is not committed.
 
 ## Commands
 

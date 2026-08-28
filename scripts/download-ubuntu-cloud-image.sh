@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-image_name="noble-server-cloudimg-arm64-20260826.img"
+image_name="noble-server-cloudimg-arm64.img"
 image_url="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
-image_sha256="afa139bac6f2629e1f2f8f34215f3a9ad9779801bcb945521ba1a45016743f"
+checksum_url="https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 image_directory="$repository_root/artifacts/images"
 image_path="$image_directory/$image_name"
 
 mkdir -p "$image_directory"
+
+image_sha256=$(curl --fail --location --retry 3 --silent --show-error "$checksum_url" | awk '$2 == "*noble-server-cloudimg-arm64.img" { checksum = $1 } END { if (checksum == "") exit 1; print checksum }')
 
 if [ ! -f "$image_path" ]; then
   printf 'Downloading %s\n' "$image_name"
@@ -18,3 +20,4 @@ if [ ! -f "$image_path" ]; then
 fi
 
 printf '%s  %s\n' "$image_sha256" "$image_path" | shasum -a 256 --check
+printf 'Verified SHA-256: %s\n' "$image_sha256"
