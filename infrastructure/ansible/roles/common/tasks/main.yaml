@@ -1,10 +1,11 @@
 ---
-- name: Install base packages required by k3s
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
+- name: Verify base commands supplied by the Ubuntu cloud image
+  ansible.builtin.command: "{{ item }}"
+  changed_when: false
+  loop:
+    - curl --version
+    - iptables --version
+    - modprobe --version
 
 - name: Load the br_netfilter kernel module at boot
   ansible.builtin.copy:
