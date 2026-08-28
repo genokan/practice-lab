@@ -1,0 +1,5 @@
+---
+common_packages:
+  - ca-certificates
+  - curl
+  - iptables

@@ -1,0 +1,64 @@
+---
+- name: Create the k3s configuration directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure the k3s server
+  ansible.builtin.copy:
+    dest: "{{ k3s_config_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      node-name: {{ k3s_node_name }}
+      write-kubeconfig-mode: "0600"
+
+- name: Check the installed k3s version
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: k3s_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Install the pinned k3s server version
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sfL https://get.k3s.io | sh -s - server
+  args:
+    executable: /bin/bash
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+
+- name: Enable and start k3s
+  ansible.builtin.systemd_service:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for the control-plane node to become Ready
+  ansible.builtin.command: /usr/local/bin/k3s kubectl get node {{ k3s_node_name }} --no-headers
+  register: k3s_node_status
+  changed_when: false
+  retries: 30
+  delay: 5
+  until: "' Ready ' in k3s_node_status.stdout"
+
+- name: Fetch the generated kubeconfig to the ignored local path
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ k3s_local_kubeconfig_path }}"
+    flat: true
+  no_log: true
+
+- name: Configure kubeconfig for the local SSH tunnel
+  ansible.builtin.replace:
+    path: "{{ k3s_local_kubeconfig_path }}"
+    regexp: 'https://[^[:space:]]+:6443'
+    replace: https://127.0.0.1:6443
+  delegate_to: localhost
+  become: false
+  no_log: true
