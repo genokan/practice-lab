@@ -1,8 +1,7 @@
 TERRAFORM_DIR := infrastructure/terraform
 ANSIBLE_DIR := infrastructure/ansible
-KUBECONFIG_PATH := $(CURDIR)/kubeconfig/practice-lab.yaml
 
-.PHONY: bootstrap bootstrap-status bootstrap-destroy bootstrap-cleanup-session destroy-all init image image-refresh plan apply destroy inventory terraform-validate ansible-inventory ansible-syntax k3s kubectl-node verify-k3s
+.PHONY: bootstrap bootstrap-status bootstrap-destroy bootstrap-cleanup-session destroy-all init image image-refresh plan apply destroy inventory terraform-validate ansible-inventory ansible-syntax k3s
 
 bootstrap:
 	./scripts/bootstrap-libvirt.sh apply
@@ -51,9 +50,4 @@ ansible-syntax: inventory
 
 k3s: inventory
 	ANSIBLE_CONFIG=$(abspath $(ANSIBLE_DIR)/ansible.cfg) ansible-playbook $(abspath $(ANSIBLE_DIR)/playbooks/bootstrap-k3s.yaml)
-
-kubectl-node:
-	./scripts/kubectl-practice-lab.sh get nodes
-
-verify-k3s:
-	./scripts/verify-k3s.sh
+	./scripts/bootstrap-libvirt.sh apply

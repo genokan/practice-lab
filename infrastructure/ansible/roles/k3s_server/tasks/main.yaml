@@ -16,6 +16,9 @@
     content: |
       node-name: {{ k3s_node_name }}
       write-kubeconfig-mode: "0600"
+      tls-san:
+        - {{ k3s_api_hostname }}
+  notify: Restart k3s
 
 - name: Check the installed k3s version
   ansible.builtin.command: /usr/local/bin/k3s --version
@@ -32,6 +35,9 @@
   environment:
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
   when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+
+- name: Apply any changed k3s configuration
+  ansible.builtin.meta: flush_handlers
 
 - name: Enable and start k3s
   ansible.builtin.systemd_service:
@@ -54,11 +60,11 @@
     flat: true
   no_log: true
 
-- name: Configure kubeconfig for the local SSH tunnel
+- name: Configure kubeconfig for the MB1 API endpoint
   ansible.builtin.replace:
     path: "{{ k3s_local_kubeconfig_path }}"
     regexp: 'https://[^[:space:]]+:6443'
-    replace: https://127.0.0.1:6443
+    replace: "https://{{ k3s_api_hostname }}:6443"
   delegate_to: localhost
   become: false
   no_log: true

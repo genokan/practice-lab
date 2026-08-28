@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Bootstrap only the conventional libvirt resources required by this repository.
 # The script intentionally does not modify MB1's LAN, Wi-Fi, or Docker Swarm
-# configuration. It adds two narrow rules to Docker's intended DOCKER-USER extension
-# chain so default-libvirt guests can egress through Docker's host-wide FORWARD policy.
+# configuration. It adds narrowly scoped rules to Docker's intended DOCKER-USER
+# extension chain: default-libvirt guest egress and the k3s API exposed on MB1.
 
 action=${1:-}
 libvirt_host=${LIBVIRT_HOST:-bcant@mb1.opsguy.io}
@@ -15,7 +15,8 @@ Usage: scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-artifa
 
   apply    Define, start, and autostart libvirt's conventional default NAT network
            and default directory storage pool on MB1. Also install the narrowly
-           scoped forwarding rule required for that network to egress on this host.
+           scoped forwarding rules required for guest egress and the k3s API on
+           mb1.opsguy.io:6443.
   status   Print the current state of those resources.
   destroy  Stop and undefine those resources only when no libvirt domains and no
            volumes remain in the default pool. It never removes the image directory.
@@ -72,8 +73,8 @@ fi
 
 # Docker owns a base FORWARD chain with a drop policy on MB1. Libvirt's standard
 # NAT table is present, but its guest traffic cannot reach postrouting. DOCKER-USER
-# is Docker's supported extension point; these exact rules permit only virbr0 egress
-# and established replies, leaving all other Docker forwarding behavior unchanged.
+# is Docker's supported extension point; these exact rules permit only virbr0 egress,
+# established replies, and k3s API traffic from the LAN through MB1.
 sudo -n install -d -m 0755 /usr/local/libexec
 sudo -n tee "$forwarding_helper_path" >/dev/null <<'FORWARD_HELPER'
 #!/usr/bin/env bash
@@ -83,25 +84,47 @@ egress_rule=(-i virbr0 -m comment --comment practice-lab-libvirt-egress -j ACCEP
 reply_rule=(-o virbr0 -m conntrack --ctstate ESTABLISHED,RELATED -m comment --comment practice-lab-libvirt-reply -j ACCEPT)
 
 ensure_rule() {
-  if ! iptables -C DOCKER-USER "$@"; then
-    iptables -I DOCKER-USER 1 "$@"
+  local table=$1
+  local chain=$2
+  shift 2
+  if ! iptables -t "$table" -C "$chain" "$@"; then
+    iptables -t "$table" -I "$chain" 1 "$@"
   fi
 }
 
 remove_rule() {
-  while iptables -C DOCKER-USER "$@"; do
-    iptables -D DOCKER-USER "$@"
+  local table=$1
+  local chain=$2
+  shift 2
+  while iptables -t "$table" -C "$chain" "$@"; do
+    iptables -t "$table" -D "$chain" "$@"
   done
 }
 
+control_plane_ip=$(virsh -c qemu:///system domifaddr practice-cp-1 --source lease 2>/dev/null | awk '/ipv4/ { split($4, address, "/"); print address[1]; exit }')
+api_forward_rule=()
+api_nat_rule=()
+if [[ -n "$control_plane_ip" ]]; then
+  api_forward_rule=(-i wld0 -o virbr0 -p tcp -d "$control_plane_ip" --dport 6443 -m comment --comment practice-lab-k3s-api -j ACCEPT)
+  api_nat_rule=(-i wld0 -p tcp --dport 6443 -m comment --comment practice-lab-k3s-api -j DNAT --to-destination "$control_plane_ip:6443")
+fi
+
 case "${1:-}" in
   apply)
-    ensure_rule "${egress_rule[@]}"
-    ensure_rule "${reply_rule[@]}"
+    ensure_rule filter DOCKER-USER "${egress_rule[@]}"
+    ensure_rule filter DOCKER-USER "${reply_rule[@]}"
+    if [[ -n "$control_plane_ip" ]]; then
+      ensure_rule filter DOCKER-USER "${api_forward_rule[@]}"
+      ensure_rule nat PREROUTING "${api_nat_rule[@]}"
+    fi
     ;;
   remove)
-    remove_rule "${egress_rule[@]}"
-    remove_rule "${reply_rule[@]}"
+    remove_rule filter DOCKER-USER "${egress_rule[@]}"
+    remove_rule filter DOCKER-USER "${reply_rule[@]}"
+    if [[ -n "$control_plane_ip" ]]; then
+      remove_rule filter DOCKER-USER "${api_forward_rule[@]}"
+      remove_rule nat PREROUTING "${api_nat_rule[@]}"
+    fi
     ;;
   *)
     echo "Usage: $0 <apply|remove>" >&2

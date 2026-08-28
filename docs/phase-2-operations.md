@@ -14,32 +14,28 @@ make k3s
 
 The playbook installs `v1.36.1+k3s1`, writes `/etc/rancher/k3s/config.yaml`, enables
 the `k3s` service, and fetches its kubeconfig to the ignored
-`kubeconfig/practice-lab.yaml` path.
+`kubeconfig/practice-lab.yaml` path. MB1 exposes the API at
+`https://mb1.opsguy.io:6443`.
 
-## Use kubectl from the Mac
+## Use kubectl normally
 
-The standard libvirt network is NAT-only, so the Mac has no direct route to the VM
-address. The repository wrapper opens a temporary SSH tunnel through MB1 for each
-command, then closes it when the command exits:
+Set the ignored kubeconfig once in your shell, then use ordinary Kubernetes commands:
 
 ```sh
-./scripts/kubectl-practice-lab.sh get nodes
-make kubectl-node
+export KUBECONFIG="$PWD/kubeconfig/practice-lab.yaml"
+kubectl get nodes
+kubectl get pods -A
 ```
-
-This preserves the simple default libvirt network and does not add a permanent local
-tunnel. The bootstrap-owned `DOCKER-USER` egress rules are documented in the Phase 1
-operations guide.
 
 ## Verify the cluster
 
 ```sh
-make verify-k3s
+kubectl get nodes
+kubectl get deployments -n kube-system
+kubectl run phase2-connectivity --image=busybox:1.37.0 --restart=Never --command -- sh -ec 'nslookup kubernetes.default.svc.cluster.local && wget -qO- https://example.com >/dev/null'
+kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/phase2-connectivity --timeout=120s
+kubectl delete pod phase2-connectivity
 ```
-
-The verification checks the Ready node, CoreDNS, Traefik, metrics-server, and
-local-path-provisioner rollouts, then runs an ephemeral pod that resolves cluster DNS
-and reaches the public internet. The test pod is removed when the script exits.
 
 ## Re-run behavior
 
