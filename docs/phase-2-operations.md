@@ -27,8 +27,9 @@ command, then closes it when the command exits:
 make kubectl-node
 ```
 
-This preserves the simple default libvirt network and does not add firewall rules or a
-permanent local tunnel.
+This preserves the simple default libvirt network and does not add a permanent local
+tunnel. The bootstrap-owned `DOCKER-USER` egress rules are documented in the Phase 1
+operations guide.
 
 ## Verify the cluster
 
