@@ -47,7 +47,7 @@ resource "libvirt_volume" "control_plane_cloud_init" {
 
   target = {
     format = {
-      type = "raw"
+      type = "iso"
     }
   }
 }
