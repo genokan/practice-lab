@@ -15,15 +15,17 @@ inventory with an SSH jump through MB1.
 
 The image download script retrieves Ubuntu's official `SHA256SUMS` manifest from the
 same Noble `current` directory, then validates the ARM64 cloud image against that
-manifest before it is used. The verified hash is printed at completion. The image is
-stored in ignored `artifacts/images/` and is not committed.
+manifest before it is used. The verified hash is stored beside the ignored image cache
+and printed at completion. A normal `make image` verifies and reuses that cache. Run
+`make image-refresh` only when intentionally accepting the then-current Ubuntu image.
 
 ## Commands
 
 ```sh
 make bootstrap
 make init
-make image
+make image-refresh  # first download, or deliberate Ubuntu image refresh
+make image          # later runs verify and reuse the cache
 make terraform-validate
 make plan
 make apply

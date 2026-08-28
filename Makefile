@@ -1,7 +1,7 @@
 TERRAFORM_DIR := infrastructure/terraform
 ANSIBLE_DIR := infrastructure/ansible
 
-.PHONY: bootstrap bootstrap-status bootstrap-destroy bootstrap-cleanup-session destroy-all init image plan apply destroy inventory terraform-validate ansible-inventory
+.PHONY: bootstrap bootstrap-status bootstrap-destroy bootstrap-cleanup-session destroy-all init image image-refresh plan apply destroy inventory terraform-validate ansible-inventory
 
 bootstrap:
 	./scripts/bootstrap-libvirt.sh apply
@@ -20,6 +20,9 @@ init:
 
 image:
 	./scripts/download-ubuntu-cloud-image.sh
+
+image-refresh:
+	./scripts/download-ubuntu-cloud-image.sh --refresh
 
 plan:
 	terraform -chdir=$(TERRAFORM_DIR) plan
