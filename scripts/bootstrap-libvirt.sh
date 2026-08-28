@@ -37,11 +37,11 @@ pool_name=default
 pool_target=/var/lib/libvirt/images
 
 network_is_active() {
-  virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "yes" ? 0 : 1) }'
+  virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); active = $2 } END { exit(active == "yes" ? 0 : 1) }'
 }
 
 pool_is_active() {
-  virsh pool-info "$pool_name" | awk -F: '/^State:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "running" ? 0 : 1) }'
+  virsh pool-info "$pool_name" | awk -F: '/^State:/ { gsub(/[[:space:]]/, "", $2); state = $2 } END { exit(state == "running" ? 0 : 1) }'
 }
 
 if ! virsh net-info "$network_name" >/dev/null 2>&1; then
