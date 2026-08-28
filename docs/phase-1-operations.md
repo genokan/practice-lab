@@ -48,3 +48,7 @@ make destroy-all
 
 `bootstrap-libvirt.sh destroy` refuses to undefine the default network or pool if any
 libvirt domain or volume remains, and never removes `/var/lib/libvirt/images`.
+
+The `bootstrap-cleanup-session` target is a one-time repair for an inactive user-session
+network accidentally created by an early bootstrap script. It is not part of normal
+setup or teardown.

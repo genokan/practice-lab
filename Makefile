@@ -1,7 +1,7 @@
 TERRAFORM_DIR := infrastructure/terraform
 ANSIBLE_DIR := infrastructure/ansible
 
-.PHONY: bootstrap bootstrap-status bootstrap-destroy destroy-all init image plan apply destroy inventory terraform-validate ansible-inventory
+.PHONY: bootstrap bootstrap-status bootstrap-destroy bootstrap-cleanup-session destroy-all init image plan apply destroy inventory terraform-validate ansible-inventory
 
 bootstrap:
 	./scripts/bootstrap-libvirt.sh apply
@@ -11,6 +11,9 @@ bootstrap-status:
 
 bootstrap-destroy:
 	./scripts/bootstrap-libvirt.sh destroy
+
+bootstrap-cleanup-session:
+	./scripts/bootstrap-libvirt.sh cleanup-session-artifact
 
 init:
 	terraform -chdir=$(TERRAFORM_DIR) init

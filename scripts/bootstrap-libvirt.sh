@@ -10,13 +10,16 @@ libvirt_host=${LIBVIRT_HOST:-bcant@mb1.opsguy.io}
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/bootstrap-libvirt.sh <apply|status|destroy>
+Usage: scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-artifact>
 
   apply    Define, start, and autostart libvirt's conventional default NAT network
            and default directory storage pool on MB1.
   status   Print the current state of those resources.
   destroy  Stop and undefine those resources only when no libvirt domains and no
            volumes remain in the default pool. It never removes the image directory.
+  cleanup-session-artifact
+           Remove the inactive per-user default network left by the pre-system-URI
+           bootstrap bug. Refuses if that session network is active.
 
 Set LIBVIRT_HOST to override the default SSH destination.
 USAGE
@@ -26,6 +29,7 @@ case "$action" in
   apply)
     ssh "$libvirt_host" 'bash -s' <<'REMOTE'
 set -euo pipefail
+export LIBVIRT_DEFAULT_URI=qemu:///system
 
 network_name=default
 network_xml=/etc/libvirt/qemu/networks/default.xml
@@ -58,11 +62,12 @@ virsh pool-info "$pool_name"
 REMOTE
     ;;
   status)
-    ssh "$libvirt_host" 'virsh net-info default; virsh pool-info default; virsh list --all; virsh vol-list default'
+    ssh "$libvirt_host" 'export LIBVIRT_DEFAULT_URI=qemu:///system; virsh net-info default; virsh pool-info default; virsh list --all; virsh vol-list default'
     ;;
   destroy)
     ssh "$libvirt_host" 'bash -s' <<'REMOTE'
 set -euo pipefail
+export LIBVIRT_DEFAULT_URI=qemu:///system
 
 network_name=default
 pool_name=default
@@ -88,6 +93,23 @@ if virsh pool-info "$pool_name" >/dev/null 2>&1; then
   virsh pool-destroy "$pool_name" 2>/dev/null || true
   virsh pool-undefine "$pool_name"
 fi
+REMOTE
+    ;;
+  cleanup-session-artifact)
+    ssh "$libvirt_host" 'bash -s' <<'REMOTE'
+set -euo pipefail
+export LIBVIRT_DEFAULT_URI=qemu:///session
+
+if ! virsh net-info default >/dev/null 2>&1; then
+  exit 0
+fi
+
+if virsh net-info default | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); exit($2 == "yes" ? 0 : 1) }'; then
+  echo "Refusing to remove an active per-user default network." >&2
+  exit 1
+fi
+
+virsh net-undefine default
 REMOTE
     ;;
   *)
