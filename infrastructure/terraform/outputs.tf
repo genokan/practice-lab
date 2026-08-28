@@ -23,6 +23,6 @@ output "control_plane_ip" {
 }
 
 output "control_plane_ssh_command" {
-  description = "SSH command for the generated Ansible user from the Mac."
-  value       = "ssh -J bcant@mb1.opsguy.io ansible@${one(local.control_plane_ipv4_addresses)}"
+  description = "Repository-owned SSH wrapper for the generated Ansible user from the Mac."
+  value       = "./scripts/connect-control-plane.sh"
 }

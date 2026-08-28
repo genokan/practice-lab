@@ -31,8 +31,13 @@ make plan
 make apply
 make plan       # should show no changes
 make inventory
+./scripts/connect-control-plane.sh hostname
 ANSIBLE_CONFIG=infrastructure/ansible/ansible.cfg ansible all -m ping
 ```
+
+The SSH wrapper and generated inventory use an ignored, project-local known-hosts file
+under `artifacts/ssh/`. The first connection records the VM's generated host key there;
+the global Mac SSH configuration remains unchanged.
 
 The destroy command is intentional and destructive:
 
