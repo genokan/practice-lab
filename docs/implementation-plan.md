@@ -447,6 +447,8 @@ Acceptance criteria:
 
 ### Phase 1: Terraform VM provisioning
 
+- run the committed libvirt bootstrap script when the conventional default network and
+  storage pool have not yet been registered on MB1
 - create minimal Terraform configuration
 - create one control-plane VM
 - use cloud-init only for hostname, user, SSH key, and minimal bootstrapping

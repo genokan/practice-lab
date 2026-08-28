@@ -1,0 +1,26 @@
+# Terraform working data and state can contain machine details and cloud-init inputs.
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!terraform.tfvars.example
+
+# Generated control-plane access material.
+infrastructure/ansible/inventory/*.ini
+infrastructure/ansible/inventory/*.yaml
+infrastructure/ansible/inventory/*.yml
+infrastructure/ansible/inventory/host_vars/
+infrastructure/ansible/inventory/group_vars/
+infrastructure/ansible/.local/
+artifacts/
+kubeconfig/
+*.kubeconfig
+
+# Credentials and local environment files must never enter the public repository.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
