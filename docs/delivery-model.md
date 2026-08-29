@@ -16,7 +16,7 @@ reviewable.
 | System | Owns |
 | --- | --- |
 | Application CI | Tests the Phoenix source and publishes immutable ARM64 images to GHCR. |
-| Chart CI | Packages the Helm chart and publishes an OCI artifact to GHCR. |
+| Chart CI | Lints, renders, documents, packages, and publishes an OCI artifact to GHCR. |
 | GitOps release manifests | Select the exact image and chart digests for each release. |
 | GitHub pull requests | Review and merge desired-state updates on `main`. |
 | Argo CD | Reconciles the selected artifacts after the GitOps change is merged. |
@@ -84,9 +84,23 @@ values.
 4. A local or in-cluster smoke check verifies Argo health, readiness, and the staging
    endpoint. GitHub-hosted runners never need inbound homelab access.
 
-Chart CI follows the same pattern only when chart source changes: it packages and
-pushes a new OCI chart, then opens a staging release-manifest pull request that
-updates the chart digest. Application image changes and chart changes are independent.
+Chart CI follows the same pattern only when chart source changes: it lint-renders the
+chart against every checked-in release manifest, verifies its generated chart README,
+packages and pushes a new OCI chart, then opens a staging release-manifest pull
+request that updates the chart digest. Application image changes and chart changes are
+independent.
+
+## Generated component documentation
+
+Generated documentation is committed beside the component it describes, not hidden in
+workflow output. `helm-docs` generates `charts/hello-api/README.md` from `Chart.yaml`,
+`values.yaml`, and template comments. `terraform-docs` generates
+`infrastructure/terraform/README.md` from the module's variables, outputs, and
+providers. The repository README links to both component READMEs.
+
+CI runs each generator with pinned tooling and fails if regenerating documentation
+would change the working tree. This makes a chart value, template interface, or
+Terraform input/output change incomplete until its local documentation is updated.
 
 ## Production promotion and releases
 
