@@ -44,10 +44,12 @@ The implementation is deliberately certificate-manager and Vault-PKI based:
    cert-manager requests short-lived Kubernetes TokenRequest JWTs automatically, so
    neither a Vault token nor a static TokenReview JWT is stored for the cluster.
 3. Create separate Vault-issued Certificates for the Traefik listener
-   (`argo.opsguy.io`) and Argo's stable Service DNS names. Argo hot-reloads
-   `argocd-server-tls` for its HTTPS endpoint.
-4. Configure the Traefik listener to use `argocd-ingress-tls`, and configure a
-   `ServersTransport` with
+   (`argo.opsguy.io`) and Argo's stable Service DNS names. Argo uses
+   `argocd-server-tls` for its HTTPS endpoint. During initial bootstrap, restart
+   `argocd-server` after this Secret is first issued so it leaves its generated
+   self-signed certificate behind.
+4. Configure the Traefik listener to use `argocd-ingress-tls`. Its backend Service
+   (not the Ingress) selects HTTPS and a `ServersTransport` with
    `serverName: argocd-server.argocd.svc.cluster.local` for the HTTPS backend.
    Traefik verifies the Vault CA chain and hostname; it must not use
    `insecureSkipVerify`.
@@ -57,6 +59,13 @@ The implementation is deliberately certificate-manager and Vault-PKI based:
 
 The Vault policy names and relay port are versioned with this implementation. No
 certificate key, Vault token, or Vault value is committed to either repository.
+
+After initial issuance, run this one-time reload before validating the route:
+
+```sh
+kubectl rollout restart deployment/argocd-server -n argocd
+kubectl rollout status deployment/argocd-server -n argocd --timeout=180s
+```
 
 ### Vault bootstrap
 
