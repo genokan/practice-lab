@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hello-api
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - application: hello-api-staging
+            namespace: hello-staging
+            releaseName: hello-api-staging
+            valuesFile: values/hello-api/staging.yaml
+          - application: hello-api-production
+            namespace: hello-production
+            releaseName: hello-api-production
+            valuesFile: values/hello-api/production.yaml
+  template:
+    metadata:
+      name: '{{ .application }}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      sources:
+        - repoURL: oci://ghcr.io/genokan/practice-hello-api/charts/hello-api
+          targetRevision: sha256:a7402824c02a6e8d94a0ef53666761ce64ddbc2fc316846c2331d1caccd30c74
+          path: .
+          helm:
+            releaseName: '{{ .releaseName }}'
+            valueFiles:
+              - '$values/{{ .valuesFile }}'
+        - repoURL: https://github.com/genokan/practice-lab.git
+          targetRevision: main
+          ref: values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

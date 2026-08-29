@@ -10,4 +10,5 @@ values/<application>/production.yaml
 ```
 
 Do not place application source, chart source, credentials, or secret values here.
-The first real ApplicationSet is added with the separate hello-api repository.
+`hello-api.yaml` is the first real example: it declares one OCI chart and generates
+the staging and production Argo Applications using the two values files.
