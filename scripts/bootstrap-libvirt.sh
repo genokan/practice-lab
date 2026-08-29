@@ -4,7 +4,8 @@ set -euo pipefail
 # Bootstrap only the conventional libvirt resources required by this repository.
 # The script intentionally does not modify MB1's LAN, Wi-Fi, or Docker Swarm
 # configuration. It adds narrowly scoped rules to Docker's intended DOCKER-USER
-# extension chain: default-libvirt guest egress and the k3s API exposed on MB1.
+# extension chain for default-libvirt guest egress. A systemd TCP proxy exposes the
+# k3s API on MB1 without changing the guest network.
 
 action=${1:-}
 libvirt_host=${LIBVIRT_HOST:-bcant@mb1.opsguy.io}
@@ -15,8 +16,8 @@ Usage: scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-artifa
 
   apply    Define, start, and autostart libvirt's conventional default NAT network
            and default directory storage pool on MB1. Also install the narrowly
-           scoped forwarding rules required for guest egress and the k3s API on
-           mb1.opsguy.io:6443.
+           scoped forwarding rule required for guest egress and the k3s API proxy
+           on mb1.opsguy.io:6443.
   status   Print the current state of those resources.
   destroy  Stop and undefine those resources only when no libvirt domains and no
            volumes remain in the default pool. It never removes the image directory.
@@ -40,6 +41,8 @@ pool_name=default
 pool_target=/var/lib/libvirt/images
 forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
+k3s_api_socket_path=/etc/systemd/system/practice-lab-k3s-api.socket
+k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 
 network_is_active() {
   virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); active = $2 } END { exit(active == "yes" ? 0 : 1) }'
@@ -73,8 +76,8 @@ fi
 
 # Docker owns a base FORWARD chain with a drop policy on MB1. Libvirt's standard
 # NAT table is present, but its guest traffic cannot reach postrouting. DOCKER-USER
-# is Docker's supported extension point; these exact rules permit only virbr0 egress,
-# established replies, and k3s API traffic from the LAN through MB1.
+# is Docker's supported extension point; these exact rules permit only virbr0 egress
+# and established replies, leaving all other Docker forwarding behavior unchanged.
 sudo -n install -d -m 0755 /usr/local/libexec
 sudo -n tee "$forwarding_helper_path" >/dev/null <<'FORWARD_HELPER'
 #!/usr/bin/env bash
@@ -101,30 +104,14 @@ remove_rule() {
   done
 }
 
-control_plane_ip=$(virsh -c qemu:///system domifaddr practice-cp-1 --source lease 2>/dev/null | awk '/ipv4/ { split($4, address, "/"); print address[1]; exit }')
-api_forward_rule=()
-api_nat_rule=()
-if [[ -n "$control_plane_ip" ]]; then
-  api_forward_rule=(-i wld0 -o virbr0 -p tcp -d "$control_plane_ip" --dport 6443 -m comment --comment practice-lab-k3s-api -j ACCEPT)
-  api_nat_rule=(-i wld0 -p tcp --dport 6443 -m comment --comment practice-lab-k3s-api -j DNAT --to-destination "$control_plane_ip:6443")
-fi
-
 case "${1:-}" in
   apply)
     ensure_rule filter DOCKER-USER "${egress_rule[@]}"
     ensure_rule filter DOCKER-USER "${reply_rule[@]}"
-    if [[ -n "$control_plane_ip" ]]; then
-      ensure_rule filter DOCKER-USER "${api_forward_rule[@]}"
-      ensure_rule nat PREROUTING "${api_nat_rule[@]}"
-    fi
     ;;
   remove)
     remove_rule filter DOCKER-USER "${egress_rule[@]}"
     remove_rule filter DOCKER-USER "${reply_rule[@]}"
-    if [[ -n "$control_plane_ip" ]]; then
-      remove_rule filter DOCKER-USER "${api_forward_rule[@]}"
-      remove_rule nat PREROUTING "${api_nat_rule[@]}"
-    fi
     ;;
   *)
     echo "Usage: $0 <apply|remove>" >&2
@@ -154,6 +141,39 @@ sudo -n systemctl daemon-reload
 sudo -n systemctl enable practice-lab-libvirt-forward.service
 sudo -n systemctl restart practice-lab-libvirt-forward.service
 
+control_plane_ip=$(virsh domifaddr practice-cp-1 --source lease 2>/dev/null | awk '/ipv4/ { split($4, address, "/"); print address[1]; exit }')
+mb1_lan_ip=$(ip -4 -o addr show dev wld0 | awk '{ split($4, address, "/"); print address[1]; exit }')
+if [[ -n "$control_plane_ip" && -n "$mb1_lan_ip" ]]; then
+  # Remove the temporary DNAT attempt from earlier bootstrap revisions. A local TCP
+  # proxy is simpler and works with libvirt's intentionally inbound-restrictive NAT.
+  sudo -n iptables -D DOCKER-USER -i wld0 -o virbr0 -p tcp -d "$control_plane_ip" --dport 6443 -m comment --comment practice-lab-k3s-api -j ACCEPT 2>/dev/null || true
+  sudo -n iptables -t nat -D PREROUTING -i wld0 -p tcp --dport 6443 -m comment --comment practice-lab-k3s-api -j DNAT --to-destination "$control_plane_ip:6443" 2>/dev/null || true
+
+  sudo -n tee "$k3s_api_service_path" >/dev/null <<UNIT
+[Unit]
+Description=Proxy the practice-lab k3s API through MB1
+Requires=practice-lab-k3s-api.socket
+After=network-online.target
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd ${control_plane_ip}:6443
+UNIT
+
+  sudo -n tee "$k3s_api_socket_path" >/dev/null <<'UNIT'
+[Unit]
+Description=Listen for the practice-lab k3s API on MB1
+
+[Socket]
+ListenStream=${mb1_lan_ip}:6443
+
+[Install]
+WantedBy=sockets.target
+UNIT
+
+  sudo -n systemctl daemon-reload
+  sudo -n systemctl enable --now practice-lab-k3s-api.socket
+fi
+
 virsh net-info "$network_name"
 virsh pool-info "$pool_name"
 sudo -n systemctl is-active practice-lab-libvirt-forward.service
@@ -171,6 +191,8 @@ network_name=default
 pool_name=default
 forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
+k3s_api_socket_path=/etc/systemd/system/practice-lab-k3s-api.socket
+k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 
 if virsh list --all --name | grep -q "[^[:space:]]"; then
   echo "Refusing to remove shared libvirt defaults while domains still exist." >&2
@@ -195,7 +217,8 @@ if virsh pool-info "$pool_name" >/dev/null 2>&1; then
 fi
 
 sudo -n systemctl disable --now practice-lab-libvirt-forward.service 2>/dev/null || true
-sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path"
+sudo -n systemctl disable --now practice-lab-k3s-api.socket 2>/dev/null || true
+sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path" "$k3s_api_socket_path" "$k3s_api_service_path"
 sudo -n systemctl daemon-reload
 REMOTE
     ;;

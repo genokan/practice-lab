@@ -14,8 +14,9 @@ inventory with an SSH jump through MB1.
 MB1's Docker rules set a host-wide `FORWARD` drop policy, which otherwise prevents
 the standard libvirt NAT network from reaching the internet. `make bootstrap` uses
 Docker's intended `DOCKER-USER` extension chain for guest egress and exposes the k3s
-API as `mb1.opsguy.io:6443`. The tagged rules are persistent, removed by
-`make destroy-all`, and do not create a second network or change Swarm workload rules.
+API as `mb1.opsguy.io:6443` with a systemd TCP proxy. These are persistent, removed
+by `make destroy-all`, and do not create a second network or change Swarm workload
+rules.
 
 ## Image verification
 
