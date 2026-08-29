@@ -1,0 +1,7 @@
+---
+resources:
+  - vault-auth-reviewer.yaml
+  - vault-issuer-rbac.yaml
+  - vault-issuer.yaml
+  - argocd-certificates.yaml
+  - argocd-server-transport.yaml

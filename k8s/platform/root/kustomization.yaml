@@ -1,5 +1,7 @@
 ---
 resources:
+  - cert-manager.yaml
+  - tls.yaml
   - argocd-server-ingress.yaml
   - apps.yaml
   - observability.yaml

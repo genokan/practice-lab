@@ -1,0 +1,10 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: argocd-server-tls
+  namespace: argocd
+spec:
+  serverName: argocd-server.argocd.svc.cluster.local
+  rootCAsSecrets:
+    - argocd-server-tls

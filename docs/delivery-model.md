@@ -53,6 +53,8 @@ release name, and each environment's values-file path.
 
 Cross-repository PR creation uses a narrowly scoped GitHub App installation token.
 The default `GITHUB_TOKEN` is not sufficient to write to a different repository.
+This automation is intentionally not configured yet; adding the GitHub App
+credentials is part of the next delivery-automation phase.
 
 Normally both generated Applications select the same chart revision. If a chart
 template change must be trialed in staging first, the single ApplicationSet may select

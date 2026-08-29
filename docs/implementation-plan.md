@@ -25,7 +25,7 @@ receive a kubeconfig or direct cluster access.
 ```text
 Mac ── SSH/libvirt ──> MB1 ── libvirt NAT ──> practice-cp-1 (k3s)
                                       │
-Pi5 Caddy ── LAN relay ──> Traefik ──┴──> Services and Pods
+Pi5 Caddy ── TLS relay ──> Traefik ── TLS ──> Services and Pods
                                       │
 Alloy ──> Pi5 Loki / Prometheus ──────┘
 Vault ──> External Secrets / Injector ─> workload credentials
@@ -68,15 +68,32 @@ complete ownership and promotion flow.
    normal `kubectl` access works from the Mac.
 2. **Platform services** — complete baseline: Argo CD, Traefik routing, Alloy,
    kube-state-metrics, and External Secrets Operator are installed.
-3. **Vault integration** — next: configure Vault Kubernetes auth, distinct staging
-   and production policies/roles, namespace-scoped SecretStores, and the Vault Agent
-   Injector. Secret values stay in Vault and are delivered as Kubernetes Secrets or
-   injected files as appropriate.
-4. **Application onboarding** — create the separate hello-api repository, publish its
-   OCI image/chart, then add its ApplicationSet and two values files here.
-5. **Promotion and failure practice** — app CI opens a staging values PR; promotion
-   opens a production values PR. Add intentional rollout, ingress, secret, and
-   resource-pressure failures only after the happy path is repeatable.
+3. **Trusted Argo TLS and certificate lifecycle** — next:
+   - install cert-manager as an Argo-managed platform component;
+   - configure the Vault PKI engine and Kubernetes auth with an issuer-specific,
+     least-privilege role for cert-manager;
+   - issue distinct Vault PKI certificates for the Traefik edge listener
+     (`argo.opsguy.io`) and the Argo Service DNS names. Argo CD hot-reloads
+     `argocd-server-tls` instead of using its generated self-signed certificate;
+   - configure Traefik’s TLS listener with the edge certificate, and use a validating
+     `ServersTransport` for the HTTPS `argocd-server` backend with its stable Service
+     DNS name; and
+   - change the MB1 relay and Caddy upstream to TLS. Caddy explicitly trusts the
+     Vault PKI CA and never skips verification.
+   This is TLS on every hop. Do not use Argo insecure mode, HTTP backends, or
+   `insecureSkipVerify` as a workaround.
+4. **Application onboarding** — complete: the separate
+   [`practice-hello-api`](https://github.com/genokan/practice-hello-api) repository
+   publishes OCI image and chart artifacts; its ApplicationSet and two values files
+   live here.
+5. **Workload Vault integration** — configure distinct staging and prod policies/
+   roles, namespace-scoped SecretStores, and the Vault Agent Injector. Secret values
+   stay in Vault and are delivered as Kubernetes Secrets or injected files as
+   appropriate. The limited cert-manager PKI-issuance access from phase 3 remains
+   separate from workload access.
+6. **Delivery automation and failure practice** — add the GitHub App credentials and
+   workflows that open staging and prod values PRs, then add intentional rollout,
+   ingress, secret, and resource-pressure failures after the happy path is repeatable.
 
 ## Constraints
 
