@@ -32,7 +32,6 @@ apps/
 charts/
   hello-api/                         # Helm source; packaged to GHCR as OCI
 gitops/
-  root/                              # seeded root Application source
   appsets/
     hello-api.yaml                   # generates one Application per release file
   releases/
@@ -40,6 +39,8 @@ gitops/
     hello-api-production.yaml
 bootstrap/
   argocd/                            # initial Helm installation only
+platform/
+  root/                              # seeded root Application source
 ```
 
 There are no environment branches and no per-environment directory tree. Release

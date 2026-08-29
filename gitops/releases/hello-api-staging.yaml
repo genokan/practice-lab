@@ -3,7 +3,9 @@
 # It is intentionally not consumed until the OCI chart has been published and the
 # ApplicationSet migration is reviewed in a later change.
 name: hello-api-staging
+releaseName: hello-staging
 namespace: hello-staging
+valuesFile: gitops/releases/hello-api-staging.yaml
 chart:
   repository: oci://ghcr.io/genokan/charts/hello-api
   digest: "sha256:7c83d5b1e6acb4b483f5b830c9d51c110147322c100df8e27d0c874a73b40a2d"
