@@ -24,22 +24,24 @@ kubectl get applications -n argocd
 
 ## Initial staging and production deployments
 
-`hello-staging` and `hello-production` are ordinary Argo Applications that render the
-same local Helm chart with separate values files. They create and use the
-`hello-staging` and `hello-production` namespaces respectively. The first image is a
-small, version-pinned public nginx image solely to establish a known-good GitOps
-baseline before the Elixir application exists.
+`hello-api-delivery` owns an ApplicationSet that generates staging and production
+applications from explicitly named release manifests. Each generated application pulls
+the Helm OCI chart and container image by immutable digest. The release manifests
+create and use the `hello-staging` and `hello-production` namespaces respectively.
+The first production image remains a small, version-pinned public nginx image solely
+to preserve the known-good GitOps baseline until the Phoenix service is promoted.
 
-The staging values enable a standard `Ingress` named `hello-staging.opsguy.io`. The
+The staging release manifest enables a standard `Ingress` named `hello-staging.opsguy.io`. The
 root application also owns the `argo.opsguy.io` Ingress for the Argo CD UI. MB1
 proxies one LAN port to k3s Traefik; Caddy on pi5 terminates TLS and proxies those
 hostnames to MB1. The Argo Ingress keeps TLS enabled between Traefik and
 `argocd-server`. Future browser-facing services add an Ingress and Caddy hostname,
 not another MB1 relay.
 
-The chart supports an image digest already. Staging uses the first Phoenix application
-image by digest; production intentionally remains on the baseline until a promotion
-copies that exact digest without rebuilding it.
+Staging uses the Phoenix image by digest; production intentionally remains on the
+baseline until a promotion copies that exact image digest without rebuilding it.
+Chart digests are selected independently, so a chart template change reaches
+production only when the production release manifest is explicitly updated.
 
 External Secrets Operator is installed now, but no Vault role, policy, `SecretStore`,
 or `ExternalSecret` is created yet: the nginx baseline does not consume a secret.

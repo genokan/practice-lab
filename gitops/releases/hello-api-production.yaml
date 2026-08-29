@@ -3,12 +3,14 @@
 # It is intentionally not consumed until the OCI chart has been published and the
 # ApplicationSet migration is reviewed in a later change.
 name: hello-api-production
+releaseName: hello-production
 namespace: hello-production
+valuesFile: gitops/releases/hello-api-production.yaml
 
 chart:
   repository: oci://ghcr.io/genokan/charts/hello-api
-  digest: ""
-  sourceRevision: ""
+  digest: "sha256:7c83d5b1e6acb4b483f5b830c9d51c110147322c100df8e27d0c874a73b40a2d"
+  sourceRevision: "99ef6bfb5a1584bf7a272473dd6d0db8f7ca1164"
 
 environment: production
 nameOverride: hello

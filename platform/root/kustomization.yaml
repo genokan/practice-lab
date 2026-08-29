@@ -1,7 +1,6 @@
 ---
 resources:
   - argocd-server-ingress.yaml
+  - hello-api-delivery.yaml
   - observability.yaml
   - external-secrets.yaml
-  - hello-staging.yaml
-  - hello-production.yaml
