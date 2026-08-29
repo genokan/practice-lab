@@ -1,20 +1,48 @@
 # practice-lab
 
-An intentionally small SRE interview practice environment built around Terraform,
-Ansible, k3s, Helm, Argo CD, GitHub Actions, and a simple Elixir application.
+`practice-lab` is the infrastructure and GitOps management repository for a small,
+rebuildable k3s lab on MB1. It owns the VM, k3s bootstrap, Argo CD, shared
+observability, Vault integration, and the desired deployment configuration for
+workloads. It deliberately does **not** own application source code, Dockerfiles, or
+Helm charts.
 
-The current baseline is a single-node k3s cluster with Argo CD, light observability,
-and separate staging/production GitOps applications. See the
-[implementation plan](docs/implementation-plan.md) for the architecture, phased
-execution plan, promotion workflow, and acceptance criteria.
+## Repository boundary
 
-The current VM provisioning commands and their safety boundaries are documented in
-[Phase 1 operations](docs/phase-1-operations.md).
+Application repositories own their code, one Helm chart per application, tests, and
+publishing immutable image and chart artifacts. This repository owns one Argo CD
+ApplicationSet manifest per deployed application and two values files for it:
 
-Pull-request checks and their explicit non-deployment boundary are documented in
-[Phase 4 operations](docs/phase-4-operations.md).
+```text
+argocd/
+  applicationsets/
+    <application>.yaml
+values/
+  <application>/
+    staging.yaml
+    production.yaml
+```
 
-The initial Phoenix service lives in [apps/hello-api](apps/hello-api). It is
-safe to run without a database until environment-scoped Vault secrets are available.
+The ApplicationSet renders the application's one OCI chart for both environments;
+the two values files provide the environment differences. Application CI opens a
+reviewed pull request here to update a staging image digest. Promotion opens a
+reviewed pull request changing the production values. Argo CD only pulls and
+reconciles committed state.
 
-The next delivery phase is documented in [OCI chart delivery and promotion](docs/delivery-model.md).
+See [the implementation plan](docs/implementation-plan.md),
+[the GitOps delivery model](docs/delivery-model.md), and
+[the rationale for this split](docs/architecture-rationale.md). The generated
+[Terraform module reference](infrastructure/terraform/README.md) lives beside the
+module it describes.
+
+## Current platform components
+
+- Terraform and Ansible provision the single-node k3s VM on MB1.
+- Argo CD owns shared in-cluster add-ons after its initial local bootstrap.
+- Grafana Alloy sends logs and lightweight Kubernetes metrics to the existing
+  homelab Loki and Prometheus services.
+- External Secrets Operator is installed. Vault Kubernetes authentication, scoped
+  stores, and the Vault Agent Injector are the next secrets-integration work.
+
+The normal Terraform, Ansible, Helm, and `kubectl` commands remain usable directly.
+The small scripts in `scripts/` only handle libvirt prerequisites and reproducible
+cloud-image/inventory setup; they are not a Kubernetes command wrapper.

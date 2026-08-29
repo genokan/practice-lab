@@ -19,10 +19,12 @@ the `k3s` service, and fetches its kubeconfig to the ignored
 
 ## Use kubectl normally
 
-Set the ignored kubeconfig once in your shell, then use ordinary Kubernetes commands:
+The Ansible bootstrap writes the ignored source kubeconfig under `kubeconfig/` and the
+normal Mac kubeconfig has the `practice-lab` context. Use ordinary Kubernetes commands
+without a wrapper or a per-command environment variable:
 
 ```sh
-export KUBECONFIG="$PWD/kubeconfig/practice-lab.yaml"
+kubectl config use-context practice-lab
 kubectl get nodes
 kubectl get pods -A
 ```

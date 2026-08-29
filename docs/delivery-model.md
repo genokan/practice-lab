@@ -1,137 +1,69 @@
-# OCI chart delivery and promotion model
+# GitOps delivery model
 
-## Status and intent
+## Ownership
 
-The initial GitOps baseline is working: Argo CD owns separate staging and production
-Applications, and staging runs the Phoenix image selected by digest. The initial
-layout deliberately kept the Helm chart in Git and rendered it from `main` to get a
-small, observable lab online quickly.
+`practice-lab` is the devops-manifests and platform repository. It owns cluster
+infrastructure, Argo CD, platform add-ons, ApplicationSet manifests, and the
+staging/production Helm values selected by Argo.
 
-The next delivery phase replaces that temporary model. It keeps one working branch
-(`main`) while making every deployable chart and image artifact immutable and
-reviewable.
-
-## Ownership boundaries
-
-| System | Owns |
-| --- | --- |
-| Application CI | Tests the Phoenix source and publishes immutable ARM64 images to GHCR. |
-| Chart CI | Lints, renders, documents, packages, and publishes an OCI artifact to GHCR. |
-| GitOps release manifests | Select the exact image and chart digests for each release. |
-| GitHub pull requests | Review and merge desired-state updates on `main`. |
-| Argo CD | Reconciles the selected artifacts after the GitOps change is merged. |
-
-GitHub Actions does not receive cluster credentials. Argo CD does not build artifacts
-or write desired state. No workflow writes directly to a workload namespace.
-
-## Target layout
+Each application repository owns application code, its single Helm chart, CI tests,
+and publishing immutable OCI image and chart artifacts. An application is never
+copied into this repository.
 
 ```text
-apps/
-  hello-api/                         # Phoenix source and container build
-charts/
-  hello-api/                         # Helm source; packaged to GHCR as OCI
-gitops/
-  appsets/
-    hello-api.yaml                   # generates one Application per release file
-  releases/
-    hello-api-staging.yaml
-    hello-api-production.yaml
-bootstrap/
-  argocd/                            # initial Helm installation only
-platform/
-  root/                              # seeded root Application source
+application repository                  practice-lab
+----------------------                  ------------
+source, Dockerfile, chart               argocd/applicationsets/<app>.yaml
+image/chart CI                           values/<app>/staging.yaml
+immutable OCI artifacts                 values/<app>/production.yaml
 ```
 
-There are no environment branches and no per-environment directory tree. Release
-files are ordinary, reviewed manifests on `main` with explicit names. The
-ApplicationSet scans every file in `gitops/releases/`, so a second service only needs
-its own explicitly named staging/production release files.
+## One ApplicationSet per application
 
-## Immutable release selection
+There is one Argo CD instance and one ApplicationSet manifest for each deployed
+application. That ApplicationSet declares one chart source and generates two Argo
+Applications:
 
-Each release file records two OCI digests:
-
-```yaml
-name: hello-api-staging
-namespace: hello-staging
-
-chart:
-  repository: oci://ghcr.io/genokan/charts/hello-api
-  digest: sha256:<chart-manifest-digest>
-  sourceRevision: <git-commit-that-built-the-chart>
-
-image:
-  repository: ghcr.io/genokan/practice-lab/hello-api
-  digest: sha256:<image-manifest-digest>
-  sourceRevision: <git-commit-that-built-the-image>
+```text
+ApplicationSet: <app>
+├── Application: <app>-staging     chart + values/<app>/staging.yaml
+└── Application: <app>-production  chart + values/<app>/production.yaml
 ```
 
-The chart's semantic version is required by Helm when it is packaged and published,
-but it is not the deployment selector. Argo uses the chart digest as the OCI
-`targetRevision`. The source revision is provenance only; the OCI digest identifies
-the exact bytes that are deployed.
-
-The ApplicationSet reads the release files from `main`, generates an Application for
-each one, pulls the chart by digest, and supplies the same release file as Helm
-values. The chart schema accepts the release metadata but uses only its normal Helm
+The chart is the same application chart in both environments. The values files hold
+environment-specific runtime configuration such as image digest, ingress hostname,
+resources, replicas, and references to Kubernetes Secrets. They never contain secret
 values.
 
-Each release manifest also selects the repository, revision, and file that provide
-the Helm values. The hello-api releases point at themselves in this repository. A
-future service may instead keep its values in its own repository; the central release
-manifest remains the small Argo-facing selector for its OCI chart, destination, and
-external values source.
+The ApplicationSet is Argo configuration, not a Helm chart and not a values file.
+It contains the Argo-only mapping: chart repository, chart revision, target namespace,
+release name, and each environment's values-file path.
 
-## Staging delivery
+## Delivery and promotion
 
-1. An application merge to `main` runs tests and publishes one ARM64 image.
-2. The workflow records the registry digest and opens a pull request that changes
-   only `hello-api-staging.yaml`'s image digest and provenance revision.
-3. Merging that pull request causes Argo to auto-sync staging.
-4. A local or in-cluster smoke check verifies Argo health, readiness, and the staging
-   endpoint. GitHub-hosted runners never need inbound homelab access.
+1. An application merge publishes an immutable ARM64 image, and optionally a new OCI
+   chart artifact.
+2. Application CI opens a PR in `practice-lab` updating only
+   `values/<app>/staging.yaml` to select the new image digest.
+3. Merging the PR makes Argo auto-sync staging.
+4. A release workflow opens a production PR updating only
+   `values/<app>/production.yaml` to copy the tested staging image digest.
+5. Merging that PR makes Argo auto-sync production. A draft release can be published
+   after local verification.
 
-Chart CI follows the same pattern only when chart source changes: it lint-renders the
-chart against every checked-in release manifest, verifies its generated chart README,
-packages and pushes a new OCI chart, then opens a staging release-manifest pull
-request that updates the chart digest. Application image changes and chart changes are
-independent.
+Cross-repository PR creation uses a narrowly scoped GitHub App installation token.
+The default `GITHUB_TOKEN` is not sufficient to write to a different repository.
 
-## Generated component documentation
+Normally both generated Applications select the same chart revision. If a chart
+template change must be trialed in staging first, the single ApplicationSet may select
+different immutable revisions for its staging and production generated Applications.
+It is still one chart for the application; values files remain values-only.
 
-Generated documentation is committed beside the component it describes, not hidden in
-workflow output. `helm-docs` generates `charts/hello-api/README.md` from `Chart.yaml`,
-`values.yaml`, and template comments. `terraform-docs` generates
-`infrastructure/terraform/README.md` from the module's variables, outputs, and
-providers. The repository README links to both component READMEs.
+## Secrets
 
-CI runs each generator with pinned tooling and fails if regenerating documentation
-would change the working tree. This makes a chart value, template interface, or
-Terraform input/output change incomplete until its local documentation is updated.
-
-## Production promotion and releases
-
-Manually dispatching the release workflow with a semantic release version selects a
-known-good staging release. The workflow opens a production pull request on `main`
-and creates a draft GitHub Release with generated notes. It copies the exact tested
-image digest and, only when requested, the chart digest. It never rebuilds either
-artifact.
-
-After the production pull request merges, Argo auto-syncs production and a local smoke
-check confirms rollout health. An operator publishes the draft release only after that
-verification, recording the image digest, chart digest, and source revisions. A failed
-rollout leaves the release as a draft and is rolled back by a reviewed production
-release-manifest revert.
-
-## Chart and application evolution
-
-Staging can move to a new chart digest while production remains on its previous chart
-digest. The same holds for application images. This allows image-only, chart-only, or
-combined promotions without environment branches or accidental production template
-changes.
-
-ApplicationSets are used for the repeated release-file-to-Application mapping. New
-services add a chart and their explicitly named staging/production release files; they
-do not require a new repository or a universal chart. They may use values from this
-repository or from the service repository.
+Vault remains authoritative. Application Helm values contain only references to
+Kubernetes Secrets. External Secrets Operator reads scoped Vault paths and writes the
+native Kubernetes Secrets consumed by workloads. Vault Kubernetes authentication and
+the Vault Agent Injector will be configured as platform capabilities; the injector is
+available for file-based runtime secret injection, while External Secrets is the
+normal choice when a chart consumes a Kubernetes Secret.
