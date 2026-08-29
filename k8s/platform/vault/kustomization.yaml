@@ -1,0 +1,4 @@
+---
+resources:
+  - workload-identities.yaml
+  - secret-stores.yaml

@@ -53,7 +53,8 @@ module it describes.
 - Grafana Alloy sends logs and lightweight Kubernetes metrics to the existing
   homelab Loki and Prometheus services.
 - External Secrets Operator is installed. Vault Kubernetes authentication, scoped
-  stores, and the Vault Agent Injector are the next secrets-integration work.
+  stores, and the Vault Agent Injector are available for workloads. See the
+  [workload Vault operations](docs/phase-5-operations.md) for the enrollment model.
 
 The normal Terraform, Ansible, Helm, and `kubectl` commands remain usable directly.
 The small scripts in `infra/scripts/` only handle libvirt prerequisites and reproducible

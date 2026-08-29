@@ -99,13 +99,12 @@ must be deployed before switching `argo.opsguy.io` to the TLS relay.
 Prometheus remote-write enablement and Caddy DNS routes remain owned by the separate
 `home-docker` repository.
 
-## Vault integration next
+## Workload Vault integration
 
-External Secrets Operator is installed but no Vault role, policy, store, or
-ExternalSecret exists yet. Configure Vault Kubernetes authentication first, then add
-separate staging and prod service accounts, policies, and namespace-scoped
-SecretStores. Install/configure Vault Agent Injector alongside that integration for
-workloads that need renewable mounted secrets.
+External Secrets Operator now uses separate staging and production Vault roles and
+namespace-scoped SecretStores. Vault Agent Injector is also installed as a shared
+platform capability. See [Phase 5 operations](phase-5-operations.md) for the exact
+paths, identities, enrollment patterns, and verification commands.
 
 ## Verify
 
