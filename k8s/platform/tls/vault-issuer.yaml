@@ -16,6 +16,7 @@ spec:
           name: vault-pki-edge-issuer
           audiences:
             - vault://argocd/vault-pki-edge
+            - https://kubernetes.default.svc.cluster.local
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
@@ -34,3 +35,4 @@ spec:
           name: vault-pki-server-issuer
           audiences:
             - vault://argocd/vault-pki-server
+            - https://kubernetes.default.svc.cluster.local

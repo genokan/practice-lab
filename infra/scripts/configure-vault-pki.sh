@@ -6,7 +6,8 @@ set -euo pipefail
 # This script needs a Vault token able to manage auth methods, policies, and the
 # practice-lab-pki mount. It never reads or prints an existing Vault secret value.
 # Kubernetes objects it relies on are declared in k8s/platform/tls/ and must already
-# be synced by Argo CD.
+# be synced by Argo CD. cert-manager uses TokenRequest JWTs; this script does not
+# create or store a long-lived Kubernetes token in Vault.
 
 : "${VAULT_TOKEN:?Export a Vault operator token before running this script.}"
 
@@ -15,7 +16,6 @@ kubernetes_host=${KUBERNETES_HOST:-https://mb1.opsguy.io:6443}
 auth_mount=kubernetes-practice-lab
 pki_mount=practice-lab-pki
 namespace=argocd
-reviewer_secret=vault-auth-reviewer-token
 caddy_host=${CADDY_HOST:-bcant@192.168.4.10}
 caddy_ca_path=${CADDY_CA_PATH:-/home/bcant/data/caddy/certs/practice-lab/vault-pki-ca.crt}
 
@@ -33,24 +33,13 @@ vault token lookup >/dev/null || {
   exit 1
 }
 
-for _ in $(seq 1 30); do
-  reviewer_jwt=$(kubectl -n "$namespace" get secret "$reviewer_secret" \
-    -o jsonpath='{.data.token}' 2>/dev/null || true)
-  reviewer_ca=$(kubectl -n "$namespace" get secret "$reviewer_secret" \
-    -o jsonpath='{.data.ca\.crt}' 2>/dev/null || true)
-  if [[ -n "$reviewer_jwt" && -n "$reviewer_ca" ]]; then
-    break
-  fi
-  sleep 1
-done
-
-[[ -n "${reviewer_jwt:-}" && -n "${reviewer_ca:-}" ]] || {
-  echo "Timed out waiting for $namespace/$reviewer_secret to be populated." >&2
+kubernetes_ca=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+[[ -n "$kubernetes_ca" ]] || {
+  echo "The current kubectl context has no embedded Kubernetes CA data." >&2
   exit 1
 }
 
-reviewer_jwt=$(printf '%s' "$reviewer_jwt" | base64 --decode)
-reviewer_ca=$(printf '%s' "$reviewer_ca" | base64 --decode)
+kubernetes_ca=$(printf '%s' "$kubernetes_ca" | base64 --decode)
 
 if ! vault auth list -format=json | jq -e --arg mount "$auth_mount/" 'has($mount)' >/dev/null; then
   vault auth enable -path="$auth_mount" kubernetes >/dev/null
@@ -58,8 +47,7 @@ fi
 
 vault write "$auth_mount/config" \
   kubernetes_host="$kubernetes_host" \
-  kubernetes_ca_cert="$reviewer_ca" \
-  token_reviewer_jwt="$reviewer_jwt" >/dev/null
+  kubernetes_ca_cert="$kubernetes_ca" >/dev/null
 
 if ! vault secrets list -format=json | jq -e --arg mount "$pki_mount/" 'has($mount)' >/dev/null; then
   vault secrets enable -path="$pki_mount" pki >/dev/null
