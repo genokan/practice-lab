@@ -44,15 +44,15 @@ spec:
 
                 stage.labels {
                   values = {
-                    namespace = ""
-                    pod       = ""
-                    container = ""
+                    namespace = "",
+                    pod       = "",
+                    container = "",
                   }
                 }
 
                 stage.static_labels {
                   values = {
-                    cluster = "practice-lab"
+                    cluster = "practice-lab",
                   }
                 }
               }
