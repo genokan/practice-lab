@@ -53,18 +53,25 @@
   delay: 5
   until: "' Ready ' in k3s_node_status.stdout"
 
-- name: Fetch the generated kubeconfig to the ignored local path
-  ansible.builtin.fetch:
+- name: Read the generated kubeconfig without logging credentials
+  ansible.builtin.slurp:
     src: /etc/rancher/k3s/k3s.yaml
-    dest: "{{ k3s_local_kubeconfig_path }}"
-    flat: true
+  register: k3s_generated_kubeconfig
   no_log: true
 
-- name: Configure kubeconfig for the MB1 API endpoint
-  ansible.builtin.replace:
-    path: "{{ k3s_local_kubeconfig_path }}"
-    regexp: 'https://\S+:6443'
-    replace: "https://{{ k3s_api_hostname }}:6443"
+- name: Create the ignored local kubeconfig directory
+  ansible.builtin.file:
+    path: "{{ k3s_local_kubeconfig_path | dirname }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Write kubeconfig for the MB1 API endpoint
+  ansible.builtin.copy:
+    dest: "{{ k3s_local_kubeconfig_path }}"
+    content: "{{ k3s_generated_kubeconfig.content | b64decode | regex_replace('https://\\S+:6443', 'https://' ~ k3s_api_hostname ~ ':6443') }}"
+    mode: "0600"
   delegate_to: localhost
   become: false
   no_log: true
