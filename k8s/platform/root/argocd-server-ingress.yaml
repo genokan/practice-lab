@@ -4,9 +4,6 @@ kind: Ingress
 metadata:
   name: argocd-server
   namespace: argocd
-  annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: https
-    traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-server-tls@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
