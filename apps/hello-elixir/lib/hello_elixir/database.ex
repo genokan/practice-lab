@@ -12,7 +12,8 @@ defmodule HelloElixir.Database do
   end
 
   defp check_tcp(database_url) do
-    with %URI{host: host, port: port} when is_binary(host) and is_integer(port) <- URI.parse(database_url),
+    with %URI{host: host, port: port} when is_binary(host) and is_integer(port) <-
+           URI.parse(database_url),
          {:ok, address} <- :inet.getaddr(String.to_charlist(host), :inet),
          {:ok, socket} <- :gen_tcp.connect(address, port, [:binary, active: false], @timeout) do
       :gen_tcp.close(socket)

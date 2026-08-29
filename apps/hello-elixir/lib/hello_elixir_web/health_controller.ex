@@ -5,8 +5,11 @@ defmodule HelloElixirWeb.HealthController do
 
   def ready(conn, _params) do
     case HelloElixir.Database.ready?() do
-      :ok -> json(conn, %{status: "ok"})
-      {:error, :database_unreachable} -> conn |> put_status(:service_unavailable) |> json(%{status: "unavailable"})
+      :ok ->
+        json(conn, %{status: "ok"})
+
+      {:error, :database_unreachable} ->
+        conn |> put_status(:service_unavailable) |> json(%{status: "unavailable"})
     end
   end
 end
