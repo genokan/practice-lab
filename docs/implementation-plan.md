@@ -74,11 +74,12 @@ complete ownership and promotion flow.
      least-privilege roles for cert-manager. cert-manager uses automatically renewed
      TokenRequest JWTs rather than a stored Vault token or static TokenReview token;
    - issue distinct Vault PKI certificates for the Traefik edge listener
-     (`argo.opsguy.io`) and the Argo Service DNS names. Argo CD hot-reloads
-     `argocd-server-tls` instead of using its generated self-signed certificate;
-   - configure Traefik’s TLS listener with the edge certificate, and use a validating
-     `ServersTransport` for the HTTPS `argocd-server` backend with its stable Service
-     DNS name; and
+     (`argo.opsguy.io`) and the Argo Service DNS names. `argocd-server` uses
+     `argocd-server-tls` instead of its generated self-signed certificate; restart it
+     after the Secret is first issued during bootstrap;
+   - configure Traefik’s TLS listener with the edge certificate, and configure its
+     Helm-managed `argocd-server` Service with a validating `ServersTransport` for
+     the HTTPS backend and its stable Service DNS name; and
    - change the MB1 relay and Caddy upstream to TLS. Caddy explicitly trusts the
      Vault PKI CA and never skips verification.
    This is TLS on every hop. Do not use Argo insecure mode, HTTP backends, or
