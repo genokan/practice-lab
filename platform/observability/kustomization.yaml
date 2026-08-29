@@ -1,0 +1,5 @@
+---
+resources:
+  - namespace.yaml
+  - alloy.yaml
+  - kube-state-metrics.yaml

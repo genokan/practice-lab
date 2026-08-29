@@ -1,0 +1,93 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: 1.12.1
+    helm:
+      releaseName: alloy
+      values: |
+        controller:
+          type: daemonset
+        alloy:
+          mounts:
+            varlog: true
+          enableReporting: false
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          configMap:
+            content: |
+              local.file_match "pods" {
+                path_targets = [{"__path__" = "/var/log/pods/*/*/*.log"}]
+                sync_period = "10s"
+              }
+
+              loki.process "pods" {
+                forward_to = [loki.write.homelab.receiver]
+
+                stage.cri {}
+
+                stage.regex {
+                  source     = "filename"
+                  expression = "^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_[^/]+/(?P<container>[^/]+)/.*$"
+                }
+
+                stage.labels {
+                  values = {
+                    namespace = ""
+                    pod       = ""
+                    container = ""
+                  }
+                }
+
+                stage.static_labels {
+                  values = {
+                    cluster = "practice-lab"
+                  }
+                }
+              }
+
+              loki.source.file "pods" {
+                targets    = local.file_match.pods.targets
+                forward_to = [loki.process.pods.receiver]
+              }
+
+              loki.write "homelab" {
+                endpoint {
+                  url = "http://192.168.4.10:3100/loki/api/v1/push"
+                }
+              }
+
+              prometheus.scrape "kube_state_metrics" {
+                targets = [{
+                  "__address__" = "kube-state-metrics.observability.svc.cluster.local:8080",
+                  "cluster"     = "practice-lab",
+                  "job"         = "kube-state-metrics",
+                }]
+                forward_to = [prometheus.remote_write.homelab.receiver]
+              }
+
+              prometheus.remote_write "homelab" {
+                endpoint {
+                  url = "http://192.168.4.10:9090/api/v1/write"
+                }
+              }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
