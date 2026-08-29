@@ -6,7 +6,7 @@ defmodule HelloElixir.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Bandit, plug: HelloElixirWeb.Router, scheme: :http, options: [port: app_port()]}
+      {Bandit, plug: HelloElixirWeb.Router, scheme: :http, port: app_port()}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: HelloElixir.Supervisor)

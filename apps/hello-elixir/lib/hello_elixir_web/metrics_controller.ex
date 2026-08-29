@@ -1,5 +1,5 @@
 defmodule HelloElixirWeb.MetricsController do
-  use Phoenix.Controller
+  import Plug.Conn
 
   def show(conn, _params) do
     environment = Application.fetch_env!(:hello_elixir, :app_environment)
