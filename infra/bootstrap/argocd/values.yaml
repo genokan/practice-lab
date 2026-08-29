@@ -6,3 +6,12 @@ redis-ha:
 global:
   logging:
     format: text
+
+# Traefik's Kubernetes Ingress provider reads service.* settings from the
+# backend Service. The CRD reference selects the Vault-CA-validated transport
+# for the argocd-server HTTPS endpoint.
+server:
+  service:
+    annotations:
+      traefik.ingress.kubernetes.io/service.serversscheme: https
+      traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-server-tls@kubernetescrd
