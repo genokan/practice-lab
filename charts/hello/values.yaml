@@ -13,6 +13,12 @@ service:
   port: 80
   targetPort: 8080
 
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  host: ""
+
 resources:
   requests:
     cpu: 25m
