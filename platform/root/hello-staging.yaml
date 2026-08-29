@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hello-staging
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/genokan/practice-lab.git
+      targetRevision: main
+      path: charts/hello
+      helm:
+        releaseName: hello-staging
+        valueFiles:
+          - $values/environments/staging/values.yaml
+    - repoURL: https://github.com/genokan/practice-lab.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: hello-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: nginxinc/nginx-unprivileged
+  tag: 1.27.5-alpine
+  digest: ""
+  pullPolicy: IfNotPresent
+
+environment: development
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    memory: 64Mi
+
+podAnnotations: {}
+
+# Add references here when a workload needs Vault-delivered data. Values contain
+# only a Kubernetes Secret name and key, never a secret value.
+secretEnv: []
+# - name: DATABASE_URL
+#   secretName: hello-runtime
+#   key: database-url

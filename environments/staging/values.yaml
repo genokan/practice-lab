@@ -1,0 +1,6 @@
+environment: staging
+
+image:
+  repository: nginxinc/nginx-unprivileged
+  tag: 1.27.5-alpine
+  digest: ""

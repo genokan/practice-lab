@@ -1,8 +1,9 @@
 # Phase 3 operations: Argo CD and light observability
 
-Argo CD owns the cluster add-ons in `platform/`. The initial root application installs
-Grafana Alloy and kube-state-metrics. The existing homelab Prometheus, Loki, and
-Grafana remain the only observability backends.
+Argo CD owns the cluster add-ons and initial environment workloads in `platform/` and
+`charts/`. The root application installs Grafana Alloy, kube-state-metrics, External
+Secrets Operator, and one small `hello` deployment in each environment. The existing
+homelab Prometheus, Loki, and Grafana remain the only observability backends.
 
 ## Bootstrap Argo CD
 
@@ -21,6 +22,24 @@ kubectl apply -f bootstrap/argocd/root-application.yaml
 kubectl get applications -n argocd
 ```
 
+## Initial staging and production deployments
+
+`hello-staging` and `hello-production` are ordinary Argo Applications that render the
+same local Helm chart with separate values files. They create and use the
+`hello-staging` and `hello-production` namespaces respectively. The first image is a
+small, version-pinned public nginx image solely to establish a known-good GitOps
+baseline before the Elixir application exists.
+
+The chart supports an image digest already. Phase 5 will replace the public image with
+the application image and set `image.digest` in each environment values file; a
+promotion will copy that digest from staging to production without rebuilding it.
+
+External Secrets Operator is installed now, but no Vault role, policy, `SecretStore`,
+or `ExternalSecret` is created yet: the nginx baseline does not consume a secret.
+Those resources require an authenticated Vault administration step and will be added
+with the first real application secret. The intended design remains two namespace
+scoped stores with separate staging and production Vault identities.
+
 ## What observability sends
 
 - Alloy reads Kubernetes container logs and writes them to Loki at `192.168.4.10:3100`.
@@ -38,6 +57,9 @@ stored as a secret in this repository.
 ```sh
 kubectl get applications -n argocd
 kubectl get pods -n observability
+kubectl get pods -n hello-staging
+kubectl get pods -n hello-production
+kubectl get pods -n external-secrets
 ```
 
 In Grafana, filter logs with `{cluster="practice-lab"}`. Query a lightweight status
