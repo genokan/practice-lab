@@ -69,6 +69,7 @@ vault write "$pki_mount/roles/argocd-edge" \
   allow_subdomains=false \
   key_type=ec \
   key_bits=256 \
+  require_cn=false \
   max_ttl=720h >/dev/null
 
 vault write "$pki_mount/roles/argocd-server" \
@@ -77,6 +78,7 @@ vault write "$pki_mount/roles/argocd-server" \
   allow_subdomains=true \
   key_type=ec \
   key_bits=256 \
+  require_cn=false \
   max_ttl=720h >/dev/null
 
 vault policy write cert-manager-argocd-edge - >/dev/null <<POLICY
