@@ -1,0 +1,21 @@
+---
+# This will become both the ApplicationSet generator input and Helm values file.
+# It is intentionally not consumed until the OCI chart has been published and the
+# ApplicationSet migration is reviewed in a later change.
+name: hello-api-production
+namespace: hello-production
+
+chart:
+  repository: oci://ghcr.io/genokan/charts/hello-api
+  digest: ""
+  sourceRevision: ""
+
+environment: production
+nameOverride: hello
+
+image:
+  repository: nginxinc/nginx-unprivileged
+  tag: 1.27.5-alpine
+  digest: ""
+  sourceRevision: ""
+  pullPolicy: IfNotPresent

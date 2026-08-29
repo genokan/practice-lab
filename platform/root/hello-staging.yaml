@@ -9,7 +9,7 @@ spec:
   sources:
     - repoURL: https://github.com/genokan/practice-lab.git
       targetRevision: main
-      path: charts/hello
+      path: charts/hello-api
       helm:
         releaseName: hello-staging
         valueFiles:

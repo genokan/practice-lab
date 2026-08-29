@@ -7,6 +7,7 @@ on:
       - "bootstrap/**"
       - "charts/**"
       - "environments/**"
+      - "gitops/**"
       - "infrastructure/**"
       - "platform/**"
   workflow_dispatch:
@@ -70,15 +71,15 @@ jobs:
         with:
           version: v1.36.2
       - name: Lint chart
-        run: helm lint charts/hello
+        run: helm lint charts/hello-api
       - name: Render staging chart
         run: >-
-          helm template hello-staging charts/hello
+          helm template hello-staging charts/hello-api
           --values environments/staging/values.yaml
           > /tmp/hello-staging.yaml
       - name: Render production chart
         run: >-
-          helm template hello-production charts/hello
+          helm template hello-production charts/hello-api
           --values environments/production/values.yaml
           > /tmp/hello-production.yaml
       - name: Render root manifests

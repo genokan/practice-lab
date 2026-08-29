@@ -1,4 +1,4 @@
-# hello-elixir
+# hello-api
 
 A deliberately small Phoenix service for the practice lab. It starts with no secret
 configuration and exposes:

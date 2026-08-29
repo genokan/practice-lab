@@ -1,5 +1,9 @@
 environment: staging
 
+# Preserve the initial resource and selector names while the chart itself becomes
+# the OCI-published hello-api artifact.
+nameOverride: hello
+
 image:
   repository: ghcr.io/genokan/practice-lab/hello-elixir
   tag: sha-9be49e4

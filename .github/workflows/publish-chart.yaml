@@ -1,0 +1,76 @@
+name: Publish hello-api chart
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "charts/hello-api/**"
+      - ".github/workflows/publish-chart.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.chart.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.2.3
+      - name: Lint the chart
+        run: helm lint charts/hello-api
+      - name: Log in to GHCR for Helm OCI publishing
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+      - id: chart
+        name: Package and publish the immutable chart artifact
+        env:
+          CHART_OUTPUT_DIR: ${{ runner.temp }}/charts
+          CHART_REGISTRY: oci://ghcr.io/${{ github.repository_owner }}/charts
+        run: |
+          set -euo pipefail
+          mkdir -p "$CHART_OUTPUT_DIR"
+          helm package charts/hello-api --destination "$CHART_OUTPUT_DIR"
+          chart_package="$(find "$CHART_OUTPUT_DIR" -maxdepth 1 -name '*.tgz' -print -quit)"
+          test -n "$chart_package"
+          push_output="$(helm push "$chart_package" "$CHART_REGISTRY")"
+          printf '%s\n' "$push_output"
+          digest="$(printf '%s\n' "$push_output" | awk '/^Digest:/ { print $2 }')"
+          test -n "$digest"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+  update-staging-release:
+    name: Open staging chart update PR
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      CHART_DIGEST: ${{ needs.publish.outputs.digest }}
+      SOURCE_REVISION: ${{ github.sha }}
+      RELEASE_FILE: gitops/releases/hello-api-staging.yaml
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mikefarah/yq@v4.45.4
+      - name: Select the immutable chart for staging
+        run: >-
+          yq -i
+          '.chart.digest = strenv(CHART_DIGEST) |
+          .chart.sourceRevision = strenv(SOURCE_REVISION)'
+          "$RELEASE_FILE"
+      - name: Open a staging desired-state pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/staging-hello-api-chart
+          delete-branch: true
+          commit-message: "chore(gitops): update staging hello-api chart"
+          title: "chore(gitops): update staging hello-api chart"
+          body: >-
+            Selects the immutable hello-api chart built from
+            `${{ github.sha }}` for staging. Argo deploys it only after this PR merges.
+          add-paths: ${{ env.RELEASE_FILE }}
