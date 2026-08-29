@@ -39,8 +39,10 @@ The implementation is deliberately certificate-manager and Vault-PKI based:
 
 1. Install cert-manager as an Argo-managed platform component.
 2. Configure Vault's `practice-lab-pki` PKI engine and its
-   `kubernetes-practice-lab` auth mount. The cert-manager role can issue only the
-   Argo certificate role; it cannot read KV secrets or administer Vault.
+   `kubernetes-practice-lab` auth mount. Each cert-manager role can issue only its
+   named Argo certificate role; it cannot read KV secrets or administer Vault.
+   cert-manager requests short-lived Kubernetes TokenRequest JWTs automatically, so
+   neither a Vault token nor a static TokenReview JWT is stored for the cluster.
 3. Create separate Vault-issued Certificates for the Traefik listener
    (`argo.opsguy.io`) and Argo's stable Service DNS names. Argo hot-reloads
    `argocd-server-tls` for its HTTPS endpoint.
@@ -68,9 +70,10 @@ INSTALL_CADDY_CA=1 ./infra/scripts/configure-vault-pki.sh
 
 The script creates only the `practice-lab-pki` PKI mount, its two named signing roles,
 the `kubernetes-practice-lab` auth mount, and the two cert-manager policies/roles. It
-also writes the public CA certificate into Caddy's existing certificate mount so Caddy
-can validate its TLS upstream. The Caddyfile change and MB1 TLS relay are versioned
-separately and must be deployed before switching `argo.opsguy.io` to the TLS relay.
+does not create a cluster Vault token or static TokenReview token. It also writes the
+public CA certificate into Caddy's existing certificate mount so Caddy can validate
+its TLS upstream. The Caddyfile change and MB1 TLS relay are versioned separately and
+must be deployed before switching `argo.opsguy.io` to the TLS relay.
 
 ## Observability
 

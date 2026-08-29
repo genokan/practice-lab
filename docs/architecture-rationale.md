@@ -50,5 +50,6 @@ names used by Traefik upstream.
 The existing Caddy wildcard certificate remains the browser-facing certificate.
 Caddy re-encrypts to Traefik over the MB1 TLS relay and validates the Traefik
 certificate against the Vault PKI CA. Vault Kubernetes auth gives cert-manager only
-the capability to issue its named certificate role. This keeps TLS on every hop
-without placing any private key or credential in Git.
+the capability to issue its named certificate role through automatically renewed
+Kubernetes TokenRequest JWTs. This keeps TLS on every hop without placing any private
+key or credential in Git or creating a manually rotated cluster token.

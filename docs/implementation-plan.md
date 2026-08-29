@@ -70,8 +70,9 @@ complete ownership and promotion flow.
    kube-state-metrics, and External Secrets Operator are installed.
 3. **Trusted Argo TLS and certificate lifecycle** — next:
    - install cert-manager as an Argo-managed platform component;
-   - configure the Vault PKI engine and Kubernetes auth with an issuer-specific,
-     least-privilege role for cert-manager;
+   - configure the Vault PKI engine and Kubernetes auth with issuer-specific,
+     least-privilege roles for cert-manager. cert-manager uses automatically renewed
+     TokenRequest JWTs rather than a stored Vault token or static TokenReview token;
    - issue distinct Vault PKI certificates for the Traefik edge listener
      (`argo.opsguy.io`) and the Argo Service DNS names. Argo CD hot-reloads
      `argocd-server-tls` instead of using its generated self-signed certificate;
