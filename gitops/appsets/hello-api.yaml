@@ -2,6 +2,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
+  # Kept stable during the initial migration. The generator/template below is
+  # generic: it creates an Application for every release manifest.
   name: hello-api
   namespace: argocd
 spec:
@@ -13,7 +15,7 @@ spec:
         repoURL: https://github.com/genokan/practice-lab.git
         revision: main
         files:
-          - path: gitops/releases/hello-api-*.yaml
+          - path: gitops/releases/*.yaml
   template:
     metadata:
       name: '{{ .name }}'
@@ -29,9 +31,9 @@ spec:
           helm:
             releaseName: '{{ .releaseName }}'
             valueFiles:
-              - '$values/{{ .valuesFile }}'
-        - repoURL: https://github.com/genokan/practice-lab.git
-          targetRevision: main
+              - '$values/{{ .values.file }}'
+        - repoURL: '{{ .values.repository }}'
+          targetRevision: '{{ .values.revision }}'
           ref: values
       destination:
         server: https://kubernetes.default.svc

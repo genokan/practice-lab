@@ -3,7 +3,10 @@
 name: hello-api-staging
 releaseName: hello-staging
 namespace: hello-staging
-valuesFile: gitops/releases/hello-api-staging.yaml
+values:
+  repository: https://github.com/genokan/practice-lab.git
+  revision: main
+  file: gitops/releases/hello-api-staging.yaml
 chart:
   repository: oci://ghcr.io/genokan/charts/hello-api
   digest: "sha256:7c83d5b1e6acb4b483f5b830c9d51c110147322c100df8e27d0c874a73b40a2d"

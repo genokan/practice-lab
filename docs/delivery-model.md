@@ -44,7 +44,9 @@ platform/
 ```
 
 There are no environment branches and no per-environment directory tree. Release
-files are ordinary, reviewed manifests on `main` with explicit names.
+files are ordinary, reviewed manifests on `main` with explicit names. The
+ApplicationSet scans every file in `gitops/releases/`, so a second service only needs
+its own explicitly named staging/production release files.
 
 ## Immutable release selection
 
@@ -74,6 +76,12 @@ The ApplicationSet reads the release files from `main`, generates an Application
 each one, pulls the chart by digest, and supplies the same release file as Helm
 values. The chart schema accepts the release metadata but uses only its normal Helm
 values.
+
+Each release manifest also selects the repository, revision, and file that provide
+the Helm values. The hello-api releases point at themselves in this repository. A
+future service may instead keep its values in its own repository; the central release
+manifest remains the small Argo-facing selector for its OCI chart, destination, and
+external values source.
 
 ## Staging delivery
 
@@ -111,4 +119,5 @@ changes.
 
 ApplicationSets are used for the repeated release-file-to-Application mapping. New
 services add a chart and their explicitly named staging/production release files; they
-do not require a new repository or a universal chart.
+do not require a new repository or a universal chart. They may use values from this
+repository or from the service repository.
