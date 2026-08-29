@@ -300,6 +300,8 @@ Run on relevant pull-request paths:
 - `terraform fmt -check`
 - `terraform init -backend=false`
 - `terraform validate`
+- generate `infrastructure/terraform/README.md` with a pinned `terraform-docs` and
+  fail when the committed output is stale
 - Ansible syntax checks
 - `ansible-lint`
 - YAML linting
@@ -330,6 +332,22 @@ Do not run `terraform apply` or configure the homelab from a GitHub-hosted runne
 
 Keep Mix dependency caching and Docker layer caching conceptually separate in both the
 workflow and documentation.
+
+### Generated component documentation
+
+Keep generated documentation beside the component it describes and commit it:
+
+- `terraform-docs` generates `infrastructure/terraform/README.md` from Terraform
+  variables, outputs, providers, and module metadata.
+- `helm-docs` generates `charts/hello-api/README.md` from the chart metadata, values,
+  and template comments.
+- The root README links to these component READMEs; it does not duplicate their
+  generated reference material.
+
+Pin the documentation generators in CI. CI must regenerate both documents and fail
+when doing so would produce an uncommitted diff. Chart publishing must run Helm lint
+and template rendering against every checked-in release manifest before packaging an
+OCI artifact.
 
 ### Desired-state updates
 
@@ -363,7 +381,8 @@ The chart must support:
 - rollout behavior suitable for staging and production
 
 CI must run `helm lint`, `helm template`, and rendered-manifest schema validation for
-both environment values files.
+every checked-in release manifest, and must verify that the committed Helm README is
+current.
 
 ## 10. Elixir Application Scope
 
