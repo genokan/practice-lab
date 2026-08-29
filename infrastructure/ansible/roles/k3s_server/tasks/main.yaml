@@ -1,0 +1,77 @@
+---
+- name: Create the k3s configuration directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure the k3s server
+  ansible.builtin.copy:
+    dest: "{{ k3s_config_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      node-name: {{ k3s_node_name }}
+      write-kubeconfig-mode: "0600"
+      tls-san:
+        - {{ k3s_api_hostname }}
+  notify: Restart k3s
+
+- name: Check the installed k3s version
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: k3s_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Install the pinned k3s server version
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sfL https://get.k3s.io | sh -s - server
+  args:
+    executable: /bin/bash
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+  when: k3s_installed_version.rc != 0 or k3s_version not in k3s_installed_version.stdout
+
+- name: Apply any changed k3s configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start k3s
+  ansible.builtin.systemd_service:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for the control-plane node to become Ready
+  ansible.builtin.command: /usr/local/bin/k3s kubectl get node {{ k3s_node_name }} --no-headers
+  register: k3s_node_status
+  changed_when: false
+  retries: 30
+  delay: 5
+  until: "' Ready ' in k3s_node_status.stdout"
+
+- name: Read the generated kubeconfig without logging credentials
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_generated_kubeconfig
+  no_log: true
+
+- name: Create the ignored local kubeconfig directory
+  ansible.builtin.file:
+    path: "{{ k3s_local_kubeconfig_path | dirname }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Write kubeconfig for the MB1 API endpoint
+  ansible.builtin.copy:
+    dest: "{{ k3s_local_kubeconfig_path }}"
+    content: "{{ k3s_generated_kubeconfig.content | b64decode | regex_replace('https://\\S+:6443', 'https://' ~ k3s_api_hostname ~ ':6443') }}"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  no_log: true

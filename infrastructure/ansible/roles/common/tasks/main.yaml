@@ -1,0 +1,36 @@
+---
+- name: Verify base commands supplied by the Ubuntu cloud image
+  ansible.builtin.command: "{{ item }}"
+  changed_when: false
+  loop:
+    - curl --version
+    - iptables --version
+    - modprobe --version
+
+- name: Load the br_netfilter kernel module at boot
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k3s.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      br_netfilter
+
+- name: Load the br_netfilter kernel module now
+  ansible.builtin.command: modprobe br_netfilter
+  changed_when: false
+
+- name: Configure kernel networking settings for Kubernetes
+  ansible.builtin.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/90-k3s.conf
+    reload: true
+  loop:
+    - name: net.ipv4.ip_forward
+      value: "1"
+    - name: net.bridge.bridge-nf-call-iptables
+      value: "1"
+    - name: net.bridge.bridge-nf-call-ip6tables
+      value: "1"
