@@ -41,7 +41,6 @@ pool_name=default
 pool_target=/var/lib/libvirt/images
 forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
-k3s_api_socket_path=/etc/systemd/system/practice-lab-k3s-api.socket
 k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 
 network_is_active() {
@@ -149,29 +148,26 @@ if [[ -n "$control_plane_ip" && -n "$mb1_lan_ip" ]]; then
   sudo -n iptables -D DOCKER-USER -i wld0 -o virbr0 -p tcp -d "$control_plane_ip" --dport 6443 -m comment --comment practice-lab-k3s-api -j ACCEPT 2>/dev/null || true
   sudo -n iptables -t nat -D PREROUTING -i wld0 -p tcp --dport 6443 -m comment --comment practice-lab-k3s-api -j DNAT --to-destination "$control_plane_ip:6443" 2>/dev/null || true
 
+  sudo -n systemctl disable --now practice-lab-k3s-api.socket 2>/dev/null || true
+  sudo -n rm -f /etc/systemd/system/practice-lab-k3s-api.socket
+
   sudo -n tee "$k3s_api_service_path" >/dev/null <<UNIT
 [Unit]
 Description=Proxy the practice-lab k3s API through MB1
-Requires=practice-lab-k3s-api.socket
 After=network-online.target
+Wants=network-online.target
 
 [Service]
-ExecStart=/usr/lib/systemd/systemd-socket-proxyd ${control_plane_ip}:6443
-UNIT
-
-  sudo -n tee "$k3s_api_socket_path" >/dev/null <<UNIT
-[Unit]
-Description=Listen for the practice-lab k3s API on MB1
-
-[Socket]
-ListenStream=${mb1_lan_ip}:6443
+ExecStart=/usr/bin/ncat --listen --keep-open ${mb1_lan_ip} 6443 --sh-exec '/usr/bin/ncat ${control_plane_ip} 6443'
+Restart=on-failure
+RestartSec=2
 
 [Install]
-WantedBy=sockets.target
+WantedBy=multi-user.target
 UNIT
-
   sudo -n systemctl daemon-reload
-  sudo -n systemctl enable --now practice-lab-k3s-api.socket
+  sudo -n systemctl enable practice-lab-k3s-api.service
+  sudo -n systemctl restart practice-lab-k3s-api.service
 fi
 
 virsh net-info "$network_name"
@@ -191,7 +187,6 @@ network_name=default
 pool_name=default
 forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
-k3s_api_socket_path=/etc/systemd/system/practice-lab-k3s-api.socket
 k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 
 if virsh list --all --name | grep -q "[^[:space:]]"; then
@@ -217,8 +212,8 @@ if virsh pool-info "$pool_name" >/dev/null 2>&1; then
 fi
 
 sudo -n systemctl disable --now practice-lab-libvirt-forward.service 2>/dev/null || true
-sudo -n systemctl disable --now practice-lab-k3s-api.socket 2>/dev/null || true
-sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path" "$k3s_api_socket_path" "$k3s_api_service_path"
+sudo -n systemctl disable --now practice-lab-k3s-api.socket practice-lab-k3s-api.service 2>/dev/null || true
+sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path" /etc/systemd/system/practice-lab-k3s-api.socket "$k3s_api_service_path"
 sudo -n systemctl daemon-reload
 REMOTE
     ;;
