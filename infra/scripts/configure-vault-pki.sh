@@ -69,8 +69,8 @@ vault write "$pki_mount/roles/argocd-edge" \
   allow_subdomains=false \
   key_type=ec \
   key_bits=256 \
-  require_cn=false \
   max_ttl=720h >/dev/null
+vault patch "$pki_mount/roles/argocd-edge" require_cn=false >/dev/null
 
 vault write "$pki_mount/roles/argocd-server" \
   allowed_domains=argocd.svc,argocd.svc.cluster.local \
@@ -78,8 +78,8 @@ vault write "$pki_mount/roles/argocd-server" \
   allow_subdomains=true \
   key_type=ec \
   key_bits=256 \
-  require_cn=false \
   max_ttl=720h >/dev/null
+vault patch "$pki_mount/roles/argocd-server" require_cn=false >/dev/null
 
 vault policy write cert-manager-argocd-edge - >/dev/null <<POLICY
 path "$pki_mount/sign/argocd-edge" {
