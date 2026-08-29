@@ -13,9 +13,9 @@ copied into this repository.
 ```text
 application repository                  practice-lab
 ----------------------                  ------------
-source, Dockerfile, chart               argocd/applicationsets/<app>.yaml
-image/chart CI                           values/<app>/staging.yaml
-immutable OCI artifacts                 values/<app>/production.yaml
+source, Dockerfile, chart               k8s/apps/<app>/appset.yaml
+image/chart CI                           k8s/apps/<app>/values/staging.yaml
+immutable OCI artifacts                 k8s/apps/<app>/values/prod.yaml
 ```
 
 ## One ApplicationSet per application
@@ -26,8 +26,8 @@ Applications:
 
 ```text
 ApplicationSet: <app>
-├── Application: <app>-staging     chart + values/<app>/staging.yaml
-└── Application: <app>-production  chart + values/<app>/production.yaml
+├── Application: <app>-staging     chart + apps/<app>/values/staging.yaml
+└── Application: <app>-prod        chart + apps/<app>/values/prod.yaml
 ```
 
 The chart is the same application chart in both environments. The values files hold
@@ -44,11 +44,11 @@ release name, and each environment's values-file path.
 1. An application merge publishes an immutable ARM64 image, and optionally a new OCI
    chart artifact.
 2. Application CI opens a PR in `practice-lab` updating only
-   `values/<app>/staging.yaml` to select the new image digest.
+   `k8s/apps/<app>/values/staging.yaml` to select the new image digest.
 3. Merging the PR makes Argo auto-sync staging.
-4. A release workflow opens a production PR updating only
-   `values/<app>/production.yaml` to copy the tested staging image digest.
-5. Merging that PR makes Argo auto-sync production. A draft release can be published
+4. A release workflow opens a prod PR updating only
+   `k8s/apps/<app>/values/prod.yaml` to copy the tested staging image digest.
+5. Merging that PR makes Argo auto-sync prod. A draft release can be published
    after local verification.
 
 Cross-repository PR creation uses a narrowly scoped GitHub App installation token.

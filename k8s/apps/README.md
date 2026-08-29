@@ -5,8 +5,8 @@ Applications use the application's one OCI Helm chart and these repository-owned
 values files:
 
 ```text
-values/<application>/staging.yaml
-values/<application>/production.yaml
+hello-api/values/staging.yaml
+hello-api/values/prod.yaml
 ```
 
 Do not place application source, chart source, credentials, or secret values here.

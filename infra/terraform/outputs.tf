@@ -24,5 +24,5 @@ output "control_plane_ip" {
 
 output "control_plane_ssh_command" {
   description = "Repository-owned SSH wrapper for the generated Ansible user from the Mac."
-  value       = "./scripts/connect-control-plane.sh"
+  value       = "./infra/scripts/connect-control-plane.sh"
 }

@@ -4,7 +4,7 @@ set -euo pipefail
 image_name="noble-server-cloudimg-arm64.img"
 image_url="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
 checksum_url="https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
-repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 image_directory="$repository_root/artifacts/images"
 image_path="$image_directory/$image_name"
 checksum_path="$image_path.sha256"

@@ -13,13 +13,20 @@ publishing immutable image and chart artifacts. This repository owns one Argo CD
 ApplicationSet manifest per deployed application and two values files for it:
 
 ```text
-argocd/
-  applicationsets/
-    <application>.yaml
-values/
-  <application>/
-    staging.yaml
-    production.yaml
+infra/                         # VM provisioning and initial bootstrap
+  ansible/
+  bootstrap/
+  scripts/
+  terraform/
+k8s/                           # Argo-managed cluster desired state
+  apps/
+    <application>/
+      appset.yaml
+      values/
+        staging.yaml
+        prod.yaml
+  platform/
+docs/
 ```
 
 The ApplicationSet renders the application's one OCI chart for both environments;
@@ -31,7 +38,7 @@ reconciles committed state.
 See [the implementation plan](docs/implementation-plan.md),
 [the GitOps delivery model](docs/delivery-model.md), and
 [the rationale for this split](docs/architecture-rationale.md). The generated
-[Terraform module reference](infrastructure/terraform/README.md) lives beside the
+[Terraform module reference](infra/terraform/README.md) lives beside the
 module it describes.
 
 ## Current platform components
@@ -44,5 +51,5 @@ module it describes.
   stores, and the Vault Agent Injector are the next secrets-integration work.
 
 The normal Terraform, Ansible, Helm, and `kubectl` commands remain usable directly.
-The small scripts in `scripts/` only handle libvirt prerequisites and reproducible
+The small scripts in `infra/scripts/` only handle libvirt prerequisites and reproducible
 cloud-image/inventory setup; they are not a Kubernetes command wrapper.

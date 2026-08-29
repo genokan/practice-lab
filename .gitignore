@@ -8,12 +8,12 @@ crash.*.log
 !terraform.tfvars.example
 
 # Generated control-plane access material.
-infrastructure/ansible/inventory/*.ini
-infrastructure/ansible/inventory/*.yaml
-infrastructure/ansible/inventory/*.yml
-infrastructure/ansible/inventory/host_vars/
-infrastructure/ansible/inventory/group_vars/
-infrastructure/ansible/.local/
+infra/ansible/inventory/*.ini
+infra/ansible/inventory/*.yaml
+infra/ansible/inventory/*.yml
+infra/ansible/inventory/host_vars/
+infra/ansible/inventory/group_vars/
+infra/ansible/.local/
 .ansible/
 artifacts/
 kubeconfig/
