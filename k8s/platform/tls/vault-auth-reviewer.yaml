@@ -1,0 +1,30 @@
+---
+# Vault uses this long-lived service-account token only to call the Kubernetes
+# TokenReview API. It is not an application credential and contains no value in Git.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-auth-reviewer
+  namespace: argocd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-auth-reviewer-token
+  namespace: argocd
+  annotations:
+    kubernetes.io/service-account.name: vault-auth-reviewer
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: practice-lab-vault-auth-reviewer
+subjects:
+  - kind: ServiceAccount
+    name: vault-auth-reviewer
+    namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator

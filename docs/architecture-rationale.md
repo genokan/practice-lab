@@ -38,3 +38,17 @@ two using namespace-scoped identities and creates ordinary Kubernetes Secrets at
 runtime. This keeps values out of Git while preserving standard Kubernetes behaviour.
 Vault Agent Injector is complementary for workloads that need mounted, renewed secret
 files rather than a Kubernetes Secret.
+
+## Why cert-manager and Traefik remain in the ingress path
+
+The lab keeps k3s's Traefik rather than introducing NGINX or a service mesh. It is a
+small, standard ingress controller and supports explicit TLS backend validation with
+`ServersTransport`. cert-manager requests and renews certificates from Vault PKI:
+one for the Traefik listener and a distinct certificate for the Argo Service DNS
+names used by Traefik upstream.
+
+The existing Caddy wildcard certificate remains the browser-facing certificate.
+Caddy re-encrypts to Traefik over the MB1 TLS relay and validates the Traefik
+certificate against the Vault PKI CA. Vault Kubernetes auth gives cert-manager only
+the capability to issue its named certificate role. This keeps TLS on every hop
+without placing any private key or credential in Git.

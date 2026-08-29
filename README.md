@@ -29,6 +29,11 @@ k8s/                           # Argo-managed cluster desired state
 docs/
 ```
 
+The reference application is
+[practice-hello-api](https://github.com/genokan/practice-hello-api). It owns the
+Phoenix service, Docker image, and OCI Helm chart; this repository selects the
+immutable chart and image digests deployed to staging and prod.
+
 The ApplicationSet renders the application's one OCI chart for both environments;
 the two values files provide the environment differences. Application CI opens a
 reviewed pull request here to update a staging image digest. Promotion opens a

@@ -17,7 +17,8 @@ Usage: infra/scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-
   apply    Define, start, and autostart libvirt's conventional default NAT network
            and default directory storage pool on MB1. Also install the narrowly
            scoped forwarding rule required for guest egress, the k3s API proxy on
-           mb1.opsguy.io:6443, and the k3s ingress proxy on mb1.opsguy.io:8080.
+           mb1.opsguy.io:6443, the HTTP ingress proxy on mb1.opsguy.io:8080,
+           and the TLS ingress proxy on mb1.opsguy.io:8443.
   status   Print the current state of those resources.
   destroy  Stop and undefine those resources only when no libvirt domains and no
            volumes remain in the default pool. It never removes the image directory.
@@ -43,6 +44,7 @@ forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
 k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 k3s_ingress_service_path=/etc/systemd/system/practice-lab-k3s-ingress.service
+k3s_tls_ingress_service_path=/etc/systemd/system/practice-lab-k3s-tls-ingress.service
 
 network_is_active() {
   virsh net-info "$network_name" | awk -F: '/^Active:/ { gsub(/[[:space:]]/, "", $2); active = $2 } END { exit(active == "yes" ? 0 : 1) }'
@@ -187,6 +189,24 @@ UNIT
   sudo -n systemctl daemon-reload
   sudo -n systemctl enable practice-lab-k3s-ingress.service
   sudo -n systemctl restart practice-lab-k3s-ingress.service
+
+  sudo -n tee "$k3s_tls_ingress_service_path" >/dev/null <<UNIT
+[Unit]
+Description=Proxy practice-lab k3s TLS ingress through MB1
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ncat --listen --keep-open ${mb1_lan_ip} 8443 --sh-exec '/usr/bin/ncat ${control_plane_ip} 443'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  sudo -n systemctl daemon-reload
+  sudo -n systemctl enable practice-lab-k3s-tls-ingress.service
+  sudo -n systemctl restart practice-lab-k3s-tls-ingress.service
 fi
 
 virsh net-info "$network_name"
@@ -208,6 +228,7 @@ forwarding_helper_path=/usr/local/libexec/practice-lab-libvirt-forward.sh
 forwarding_service_path=/etc/systemd/system/practice-lab-libvirt-forward.service
 k3s_api_service_path=/etc/systemd/system/practice-lab-k3s-api.service
 k3s_ingress_service_path=/etc/systemd/system/practice-lab-k3s-ingress.service
+k3s_tls_ingress_service_path=/etc/systemd/system/practice-lab-k3s-tls-ingress.service
 
 if virsh list --all --name | grep -q "[^[:space:]]"; then
   echo "Refusing to remove shared libvirt defaults while domains still exist." >&2
@@ -232,8 +253,8 @@ if virsh pool-info "$pool_name" >/dev/null 2>&1; then
 fi
 
 sudo -n systemctl disable --now practice-lab-libvirt-forward.service 2>/dev/null || true
-sudo -n systemctl disable --now practice-lab-k3s-api.socket practice-lab-k3s-api.service practice-lab-k3s-ingress.service 2>/dev/null || true
-sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path" /etc/systemd/system/practice-lab-k3s-api.socket "$k3s_api_service_path" "$k3s_ingress_service_path"
+sudo -n systemctl disable --now practice-lab-k3s-api.socket practice-lab-k3s-api.service practice-lab-k3s-ingress.service practice-lab-k3s-tls-ingress.service 2>/dev/null || true
+sudo -n rm -f "$forwarding_service_path" "$forwarding_helper_path" /etc/systemd/system/practice-lab-k3s-api.socket "$k3s_api_service_path" "$k3s_ingress_service_path" "$k3s_tls_ingress_service_path"
 sudo -n systemctl daemon-reload
 REMOTE
     ;;

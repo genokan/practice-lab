@@ -1,0 +1,43 @@
+---
+# cert-manager uses the TokenRequest API to request a short-lived JWT for this
+# service account. The token is never persisted in a Kubernetes Secret.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-pki-edge-issuer
+  namespace: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-pki-server-issuer
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-pki-issuer-token-request
+  namespace: argocd
+rules:
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts/token
+    resourceNames:
+      - vault-pki-edge-issuer
+      - vault-pki-server-issuer
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-manager-vault-pki-issuer
+  namespace: argocd
+subjects:
+  - kind: ServiceAccount
+    name: cert-manager
+    namespace: cert-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vault-pki-issuer-token-request

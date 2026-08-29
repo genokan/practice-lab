@@ -1,0 +1,44 @@
+---
+# Traefik presents this certificate to Caddy for the re-encrypted edge hop.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-ingress
+  namespace: argocd
+spec:
+  secretName: argocd-ingress-tls
+  duration: 720h
+  renewBefore: 240h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - argo.opsguy.io
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: vault-pki-edge
+---
+# Argo hot-reloads this certificate. Its SANs match the stable Kubernetes Service
+# name Traefik uses for backend TLS validation, never an individual pod IP.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  secretName: argocd-server-tls
+  duration: 720h
+  renewBefore: 240h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - argocd-server.argocd.svc
+    - argocd-server.argocd.svc.cluster.local
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: vault-pki-server
