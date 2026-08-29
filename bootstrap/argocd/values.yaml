@@ -6,3 +6,9 @@ redis-ha:
 global:
   logging:
     format: text
+
+# TLS terminates at Caddy. Argo CD therefore serves HTTP only on the private
+# k3s network, avoiding a second, pod-address TLS hop through Traefik.
+configs:
+  params:
+    server.insecure: true

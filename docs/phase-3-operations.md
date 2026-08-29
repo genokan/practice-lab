@@ -33,9 +33,9 @@ baseline before the Elixir application exists.
 The staging values enable a standard `Ingress` named `hello-staging.opsguy.io`. The
 root application also owns the `argo.opsguy.io` Ingress for the Argo CD UI. MB1
 proxies one LAN port to k3s Traefik; Caddy on pi5 terminates TLS and proxies those
-hostnames to MB1. The Argo Ingress keeps TLS enabled between Traefik and
-`argocd-server`. Future browser-facing services add an Ingress and Caddy hostname,
-not another MB1 relay.
+hostnames to MB1. `argocd-server` serves HTTP only on the private k3s network, so
+there is no second TLS hop through Traefik. Future browser-facing services add an
+Ingress and Caddy hostname, not another MB1 relay.
 
 The chart supports an image digest already. Staging uses the first Phoenix application
 image by digest; production intentionally remains on the baseline until a promotion
