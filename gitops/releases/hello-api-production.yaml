@@ -1,7 +1,5 @@
 ---
-# This will become both the ApplicationSet generator input and Helm values file.
-# It is intentionally not consumed until the OCI chart has been published and the
-# ApplicationSet migration is reviewed in a later change.
+# This is both the ApplicationSet generator input and the Helm values file.
 name: hello-api-production
 releaseName: hello-production
 namespace: hello-production
