@@ -16,7 +16,7 @@ the platform repository remains the reviewable source of deployment intent.
 There is one Argo CD instance for the lab. The platform repository therefore owns the
 Argo objects that tell that instance what to deploy. Each application gets one
 ApplicationSet manifest here, and that manifest renders the application's one chart
-with separate staging and production values files held here.
+with separate staging and prod values files held here.
 
 This is intentionally app-centred rather than environment-centred: a reader looking
 for an application's deployment state finds its AppSet and its two values files by

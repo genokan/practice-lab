@@ -1,6 +1,6 @@
 # Phase 3 operations: shared platform services
 
-Argo CD owns the shared add-ons under `platform/`: Grafana Alloy,
+Argo CD owns the shared add-ons under `k8s/platform/`: Grafana Alloy,
 kube-state-metrics, and External Secrets Operator. It does not currently own any
 application workload. Applications are onboarded later through one ApplicationSet and
 two values files per application.
@@ -15,10 +15,10 @@ helm upgrade --install argocd argo-cd \
   --version 10.4.1 \
   --namespace argocd \
   --create-namespace \
-  --values bootstrap/argocd/values.yaml \
+  --values infra/bootstrap/argocd/values.yaml \
   --wait --timeout 10m
 
-kubectl apply -f bootstrap/argocd/root-application.yaml
+kubectl apply -f infra/bootstrap/argocd/root-application.yaml
 kubectl get applications -n argocd
 ```
 
@@ -37,7 +37,7 @@ Prometheus remote-write enablement and Caddy DNS routes remain owned by the sepa
 
 External Secrets Operator is installed but no Vault role, policy, store, or
 ExternalSecret exists yet. Configure Vault Kubernetes authentication first, then add
-separate staging and production service accounts, policies, and namespace-scoped
+separate staging and prod service accounts, policies, and namespace-scoped
 SecretStores. Install/configure Vault Agent Injector alongside that integration for
 workloads that need renewable mounted secrets.
 

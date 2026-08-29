@@ -38,8 +38,8 @@ make plan
 make apply
 make plan       # should show no changes
 make inventory
-./scripts/connect-control-plane.sh hostname
-ANSIBLE_CONFIG=infrastructure/ansible/ansible.cfg ansible all -m ping
+./infra/scripts/connect-control-plane.sh hostname
+ANSIBLE_CONFIG=infra/ansible/ansible.cfg ansible all -m ping
 ```
 
 The SSH wrapper and generated inventory use an ignored, project-local known-hosts file

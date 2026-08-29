@@ -40,20 +40,24 @@ MB1.
 
 ```text
 practice-lab/
-├── argocd/applicationsets/
-│   └── <application>.yaml
-├── values/
-│   └── <application>/
-│       ├── staging.yaml
-│       └── production.yaml
-├── bootstrap/argocd/
-├── platform/
-├── infrastructure/
+├── infra/
+│   ├── ansible/
+│   ├── bootstrap/
+│   ├── scripts/
+│   └── terraform/
+├── k8s/
+│   ├── apps/
+│   │   └── <application>/
+│   │       ├── appset.yaml
+│   │       └── values/
+│   │           ├── staging.yaml
+│   │           └── prod.yaml
+│   └── platform/
 └── docs/
 ```
 
-One ApplicationSet per application generates staging and production Argo
-Applications. It renders the application's one OCI chart with the two values files.
+One ApplicationSet per application generates staging and prod Argo Applications. It
+renders the application's one OCI chart with the two values files.
 The values files contain environment configuration and immutable image selections;
 they contain no secret values. See [the delivery model](delivery-model.md) for the
 complete ownership and promotion flow.

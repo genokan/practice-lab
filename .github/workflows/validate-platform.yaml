@@ -4,11 +4,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/**"
-      - "argocd/**"
-      - "bootstrap/**"
-      - "infrastructure/**"
-      - "platform/**"
-      - "values/**"
+      - "infra/**"
+      - "k8s/**"
   workflow_dispatch:
 
 permissions:
@@ -24,16 +21,16 @@ jobs:
         with:
           terraform_version: 1.16.0
           terraform_wrapper: false
-      - run: terraform -chdir=infrastructure/terraform fmt -check
-      - run: terraform -chdir=infrastructure/terraform init -backend=false -input=false
-      - run: terraform -chdir=infrastructure/terraform validate -no-color
+      - run: terraform -chdir=infra/terraform fmt -check
+      - run: terraform -chdir=infra/terraform init -backend=false -input=false
+      - run: terraform -chdir=infra/terraform validate -no-color
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.5"
       - run: >-
           go run github.com/terraform-docs/terraform-docs@v0.20.0 markdown table
-          --output-file README.md --output-mode replace infrastructure/terraform
-      - run: git diff --exit-code -- infrastructure/terraform/README.md
+          --output-file README.md --output-mode replace infra/terraform
+      - run: git diff --exit-code -- infra/terraform/README.md
 
   ansible:
     name: Ansible
@@ -50,17 +47,17 @@ jobs:
       - name: Check YAML
         run: >-
           yamllint -d '{extends: default, rules: {line-length: disable}}'
-          bootstrap infrastructure/ansible platform argocd values
+          infra/bootstrap infra/ansible k8s
       - name: Check Ansible style
         env:
-          ANSIBLE_CONFIG: ${{ github.workspace }}/infrastructure/ansible/ansible.cfg
-        run: ansible-lint infrastructure/ansible/playbooks infrastructure/ansible/roles
+          ANSIBLE_CONFIG: ${{ github.workspace }}/infra/ansible/ansible.cfg
+        run: ansible-lint infra/ansible/playbooks infra/ansible/roles
       - name: Check Ansible syntax
         env:
-          ANSIBLE_CONFIG: ${{ github.workspace }}/infrastructure/ansible/ansible.cfg
+          ANSIBLE_CONFIG: ${{ github.workspace }}/infra/ansible/ansible.cfg
         run: >-
           ansible-playbook --syntax-check --inventory localhost,
-          infrastructure/ansible/playbooks/bootstrap-k3s.yaml
+          infra/ansible/playbooks/bootstrap-k3s.yaml
 
   manifests:
     name: Kubernetes manifests
@@ -70,4 +67,4 @@ jobs:
       - uses: azure/setup-kubectl@v4
         with:
           version: v1.36.2
-      - run: kubectl kustomize platform/root > /tmp/platform-root.yaml
+      - run: kubectl kustomize k8s/platform/root > /tmp/platform-root.yaml

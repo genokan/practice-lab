@@ -13,11 +13,11 @@ spec:
           - application: hello-api-staging
             namespace: hello-staging
             releaseName: hello-api-staging
-            valuesFile: values/hello-api/staging.yaml
-          - application: hello-api-production
-            namespace: hello-production
-            releaseName: hello-api-production
-            valuesFile: values/hello-api/production.yaml
+            valuesFile: k8s/apps/hello-api/values/staging.yaml
+          - application: hello-api-prod
+            namespace: hello-prod
+            releaseName: hello-api-prod
+            valuesFile: k8s/apps/hello-api/values/prod.yaml
   template:
     metadata:
       name: '{{ .application }}'

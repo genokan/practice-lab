@@ -12,7 +12,7 @@ libvirt_host=${LIBVIRT_HOST:-bcant@mb1.opsguy.io}
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-artifact>
+Usage: infra/scripts/bootstrap-libvirt.sh <apply|status|destroy|cleanup-session-artifact>
 
   apply    Define, start, and autostart libvirt's conventional default NAT network
            and default directory storage pool on MB1. Also install the narrowly
