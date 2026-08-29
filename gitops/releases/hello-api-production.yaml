@@ -3,7 +3,10 @@
 name: hello-api-production
 releaseName: hello-production
 namespace: hello-production
-valuesFile: gitops/releases/hello-api-production.yaml
+values:
+  repository: https://github.com/genokan/practice-lab.git
+  revision: main
+  file: gitops/releases/hello-api-production.yaml
 
 chart:
   repository: oci://ghcr.io/genokan/charts/hello-api
