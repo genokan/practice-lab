@@ -41,3 +41,23 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: vault-pki-issuer-token-request
+---
+# Vault runs outside Kubernetes. With no stored TokenReview credential, it uses
+# the short-lived JWT presented by each issuer to call TokenReview. Limit that
+# cluster-wide permission to only the two service accounts that can sign the
+# Argo edge and service certificates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-pki-issuer-auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: vault-pki-edge-issuer
+    namespace: argocd
+  - kind: ServiceAccount
+    name: vault-pki-server-issuer
+    namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator

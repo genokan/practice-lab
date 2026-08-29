@@ -68,6 +68,10 @@ export VAULT_TOKEN=<operator-token>
 INSTALL_CADDY_CA=1 ./infra/scripts/configure-vault-pki.sh
 ```
 
+`VAULT_ADDR` may point at a local SSH tunnel for administration. In that case set
+`VAULT_PUBLIC_ADDR=https://vault.opsguy.io` so issued certificates retain the stable
+public issuing-CA and CRL URLs.
+
 The script creates only the `practice-lab-pki` PKI mount, its two named signing roles,
 the `kubernetes-practice-lab` auth mount, and the two cert-manager policies/roles. It
 does not create a cluster Vault token or static TokenReview token. It also writes the
