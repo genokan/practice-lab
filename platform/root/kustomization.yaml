@@ -1,5 +1,6 @@
 ---
 resources:
+  - argocd-server-ingress.yaml
   - observability.yaml
   - external-secrets.yaml
   - hello-staging.yaml
