@@ -151,7 +151,8 @@ WantedBy=multi-user.target
 UNIT
 
 sudo -n systemctl daemon-reload
-sudo -n systemctl enable --now practice-lab-libvirt-forward.service
+sudo -n systemctl enable practice-lab-libvirt-forward.service
+sudo -n systemctl restart practice-lab-libvirt-forward.service
 
 virsh net-info "$network_name"
 virsh pool-info "$pool_name"
