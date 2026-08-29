@@ -159,7 +159,7 @@ After=network-online.target
 ExecStart=/usr/lib/systemd/systemd-socket-proxyd ${control_plane_ip}:6443
 UNIT
 
-  sudo -n tee "$k3s_api_socket_path" >/dev/null <<'UNIT'
+  sudo -n tee "$k3s_api_socket_path" >/dev/null <<UNIT
 [Unit]
 Description=Listen for the practice-lab k3s API on MB1
 
