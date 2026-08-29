@@ -48,7 +48,9 @@ jobs:
           yamllint -d '{extends: default, rules: {line-length: disable}}'
           bootstrap infrastructure/ansible platform environments
       - name: Check Ansible style
-        run: ansible-lint infrastructure/ansible
+        env:
+          ANSIBLE_CONFIG: ${{ github.workspace }}/infrastructure/ansible/ansible.cfg
+        run: ansible-lint infrastructure/ansible/playbooks infrastructure/ansible/roles
       - name: Check Ansible syntax
         env:
           ANSIBLE_CONFIG: ${{ github.workspace }}/infrastructure/ansible/ansible.cfg
