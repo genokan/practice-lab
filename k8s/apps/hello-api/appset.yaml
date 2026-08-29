@@ -14,10 +14,12 @@ spec:
             namespace: hello-staging
             releaseName: hello-api-staging
             valuesFile: k8s/apps/hello-api/values/staging.yaml
+            chartRevision: sha256:a7402824c02a6e8d94a0ef53666761ce64ddbc2fc316846c2331d1caccd30c74
           - application: hello-api-prod
             namespace: hello-prod
             releaseName: hello-api-prod
             valuesFile: k8s/apps/hello-api/values/prod.yaml
+            chartRevision: sha256:a7402824c02a6e8d94a0ef53666761ce64ddbc2fc316846c2331d1caccd30c74
   template:
     metadata:
       name: '{{ .application }}'
@@ -28,7 +30,7 @@ spec:
       project: default
       sources:
         - repoURL: oci://ghcr.io/genokan/practice-hello-api/charts/hello-api
-          targetRevision: sha256:a7402824c02a6e8d94a0ef53666761ce64ddbc2fc316846c2331d1caccd30c74
+          targetRevision: '{{ .chartRevision }}'
           path: .
           helm:
             releaseName: '{{ .releaseName }}'

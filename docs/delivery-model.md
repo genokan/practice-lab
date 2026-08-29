@@ -36,30 +36,35 @@ resources, replicas, and references to Kubernetes Secrets. They never contain se
 values.
 
 The ApplicationSet is Argo configuration, not a Helm chart and not a values file.
-It contains the Argo-only mapping: chart repository, chart revision, target namespace,
-release name, and each environment's values-file path.
+It contains the Argo-only mapping: chart repository, immutable chart revision, target
+namespace, release name, and each environment's values-file path. Each generated
+environment owns its own `chartRevision` here because Argo needs it before it can
+render Helm values; the values files remain Helm values only.
 
 ## Delivery and promotion
 
-1. An application merge publishes an immutable ARM64 image, and optionally a new OCI
-   chart artifact.
-2. Application CI opens a PR in `practice-lab` updating only
-   `k8s/apps/<app>/values/staging.yaml` to select the new image digest.
-3. Merging the PR makes Argo auto-sync staging.
-4. A release workflow opens a prod PR updating only
-   `k8s/apps/<app>/values/prod.yaml` to copy the tested staging image digest.
-5. Merging that PR makes Argo auto-sync prod. A draft release can be published
-   after local verification.
+1. A merge to an application's `main` runs only the relevant CD workflow:
+   **CD — Publish image and propose staging** for application/Docker inputs, or
+   **CD — Publish chart and propose staging** for `chart/**` inputs. A chart change
+   must include a chart-version bump before it can publish.
+2. The image workflow opens or updates a staging PR that changes only the image digest
+   in `values/staging.yaml`. The chart workflow opens or updates a staging PR that
+   changes only the staging `chartRevision` in the ApplicationSet.
+3. Merging either PR makes Argo auto-sync the corresponding staging selection.
+4. Publishing a GitHub release runs **CD — Promote production**. It opens or updates
+   a prod PR that copies the tested staging image and chart digests to prod.
+5. Merging that PR makes Argo auto-sync prod. The release body is the application
+   release note; this repository records only the exact deployment selection.
 
-Cross-repository PR creation uses a narrowly scoped GitHub App installation token.
-The default `GITHUB_TOKEN` is not sufficient to write to a different repository.
-This automation is intentionally not configured yet; adding the GitHub App
-credentials is part of the next delivery-automation phase.
+The application workflow uses the `MANIFESTS_TOKEN` fine-grained PAT, scoped only to
+this repository's Contents and Pull requests permissions. `GITHUB_TOKEN` cannot
+write to a different repository. A GitHub App can replace this token later without
+changing the delivery model.
 
-Normally both generated Applications select the same chart revision. If a chart
-template change must be trialed in staging first, the single ApplicationSet may select
-different immutable revisions for its staging and production generated Applications.
-It is still one chart for the application; values files remain values-only.
+Staging and prod normally select the same chart revision. Keeping the two immutable
+revisions independently in the ApplicationSet means a chart-template change can be
+trialed in staging without advancing prod. It is still one chart per application;
+values files remain values-only.
 
 ## Secrets
 

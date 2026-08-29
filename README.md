@@ -42,7 +42,9 @@ reconciles committed state.
 
 See [the implementation plan](docs/implementation-plan.md),
 [the GitOps delivery model](docs/delivery-model.md), and
-[the rationale for this split](docs/architecture-rationale.md). The generated
+[the rationale for this split](docs/architecture-rationale.md). See
+[Phase 6 operations](docs/phase-6-operations.md) for the CI/CD and failure-practice
+model. The generated
 [Terraform module reference](infra/terraform/README.md) lives beside the
 module it describes.
 

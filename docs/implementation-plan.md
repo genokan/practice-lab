@@ -93,9 +93,10 @@ complete ownership and promotion flow.
    stay in Vault and are delivered as Kubernetes Secrets or injected files as
    appropriate. The limited cert-manager PKI-issuance access from phase 3 remains
    separate from workload access.
-6. **Delivery automation and failure practice** — next: add the GitHub App credentials and
-   workflows that open staging and prod values PRs, then add intentional rollout,
-   ingress, secret, and resource-pressure failures after the happy path is repeatable.
+6. **Delivery automation and failure practice** — in progress: application CI/CD opens
+   staging and prod values PRs using a narrowly scoped cross-repository token, then
+   intentional rollout, ingress, secret, and resource-pressure failures are practiced
+   after the happy path is repeatable.
 
 ## Constraints
 
