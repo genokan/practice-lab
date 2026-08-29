@@ -8,6 +8,14 @@ metadata:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: default
+  # The injector maintains its own serving CA on this webhook. It is runtime state,
+  # not a desired chart value, so Argo should not continually try to replace it.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: vault-agent-injector-agent-injector-cfg
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
