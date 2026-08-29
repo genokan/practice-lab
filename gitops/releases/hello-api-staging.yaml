@@ -1,0 +1,40 @@
+---
+# This will become both the ApplicationSet generator input and Helm values file.
+# It is intentionally not consumed until the OCI chart has been published and the
+# ApplicationSet migration is reviewed in a later change.
+name: hello-api-staging
+namespace: hello-staging
+
+chart:
+  repository: oci://ghcr.io/genokan/charts/hello-api
+  digest: ""
+  sourceRevision: ""
+
+environment: staging
+nameOverride: hello
+
+image:
+  repository: ghcr.io/genokan/practice-lab/hello-api
+  tag: ""
+  digest: ""
+  sourceRevision: ""
+  pullPolicy: IfNotPresent
+
+service:
+  targetPort: 4000
+
+ingress:
+  enabled: true
+  host: hello-staging.opsguy.io
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "4000"

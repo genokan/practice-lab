@@ -1,5 +1,5 @@
 apiVersion: v2
-name: hello
+name: hello-api
 description: A tiny, intentionally replaceable workload for the practice lab.
 type: application
 version: 0.1.0

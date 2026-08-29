@@ -167,8 +167,8 @@ The intended secret hierarchy is similar to the following, adjusted after inspec
 the live Vault mounts and naming conventions:
 
 ```text
-geno/lab/kubernetes/practice-lab/staging/hello-elixir
-geno/lab/kubernetes/practice-lab/production/hello-elixir
+geno/lab/kubernetes/practice-lab/staging/hello-api
+geno/lab/kubernetes/practice-lab/production/hello-api
 ```
 
 Prefer Vault Kubernetes authentication so workloads receive short-lived, scoped access.
@@ -198,7 +198,7 @@ practice-lab/
 │       ├── update-staging-release.yaml
 │       └── promote.yaml
 ├── apps/
-│   └── hello-elixir/
+│   └── hello-api/
 ├── infrastructure/
 │   ├── terraform/
 │   │   ├── versions.tf

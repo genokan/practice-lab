@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/validate-application.yaml"
-      - "apps/hello-elixir/**"
+      - "apps/hello-api/**"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/hello-elixir
+        working-directory: apps/hello-api
     steps:
       - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
@@ -26,9 +26,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            apps/hello-elixir/deps
-            apps/hello-elixir/_build
-          key: mix-${{ runner.os }}-otp-27.2.4-elixir-1.18.4-${{ hashFiles('apps/hello-elixir/mix.lock') }}
+            apps/hello-api/deps
+            apps/hello-api/_build
+          key: mix-${{ runner.os }}-otp-27.2.4-elixir-1.18.4-${{ hashFiles('apps/hello-api/mix.lock') }}
           restore-keys: mix-${{ runner.os }}-otp-27.2.4-elixir-1.18.4-
       - run: mix deps.get
       - run: mix format --check-formatted
