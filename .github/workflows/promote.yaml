@@ -1,0 +1,99 @@
+name: Promote hello-api release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Semantic release version to create as a draft, for example v0.1.0
+        required: true
+        type: string
+      promote_chart:
+        description: Also copy the staging chart digest into production
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote-hello-api-${{ inputs.release_version }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      STAGING_RELEASE_FILE: gitops/releases/hello-api-staging.yaml
+      PRODUCTION_RELEASE_FILE: gitops/releases/hello-api-production.yaml
+      RELEASE_VERSION: ${{ inputs.release_version }}
+      PROMOTE_CHART: ${{ inputs.promote_chart }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.2.3
+      - uses: mikefarah/yq@v4.45.4
+      - name: Validate the requested release version and staging selections
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]
+          test -n "$(yq -r '.image.digest' "$STAGING_RELEASE_FILE")"
+          test -n "$(yq -r '.image.sourceRevision' "$STAGING_RELEASE_FILE")"
+          if [ "$PROMOTE_CHART" = "true" ]; then
+            test -n "$(yq -r '.chart.digest' "$STAGING_RELEASE_FILE")"
+            test -n "$(yq -r '.chart.sourceRevision' "$STAGING_RELEASE_FILE")"
+          fi
+      - name: Copy immutable staging selections to the production manifest
+        run: |
+          set -euo pipefail
+          image_repository="$(yq -r '.image.repository' "$STAGING_RELEASE_FILE")"
+          image_digest="$(yq -r '.image.digest' "$STAGING_RELEASE_FILE")"
+          image_revision="$(yq -r '.image.sourceRevision' "$STAGING_RELEASE_FILE")"
+          echo "PROMOTED_SOURCE_REVISION=$image_revision" >> "$GITHUB_ENV"
+          IMAGE_REPOSITORY="$image_repository" IMAGE_DIGEST="$image_digest" IMAGE_REVISION="$image_revision" \
+            yq -i '.image.repository = strenv(IMAGE_REPOSITORY) |
+              .image.digest = strenv(IMAGE_DIGEST) |
+              .image.sourceRevision = strenv(IMAGE_REVISION)' "$PRODUCTION_RELEASE_FILE"
+          if [ "$PROMOTE_CHART" = "true" ]; then
+            chart_repository="$(yq -r '.chart.repository' "$STAGING_RELEASE_FILE")"
+            chart_digest="$(yq -r '.chart.digest' "$STAGING_RELEASE_FILE")"
+            chart_revision="$(yq -r '.chart.sourceRevision' "$STAGING_RELEASE_FILE")"
+            CHART_REPOSITORY="$chart_repository" CHART_DIGEST="$chart_digest" CHART_REVISION="$chart_revision" \
+              yq -i '.chart.repository = strenv(CHART_REPOSITORY) |
+                .chart.digest = strenv(CHART_DIGEST) |
+                .chart.sourceRevision = strenv(CHART_REVISION)' "$PRODUCTION_RELEASE_FILE"
+          fi
+      - name: Render the selected production values
+        run: >-
+          helm template hello-production charts/hello-api
+          --values "$PRODUCTION_RELEASE_FILE"
+          > /tmp/hello-api-production.yaml
+      - id: promotion_pr
+        name: Open the production desired-state pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/promote-hello-api-${{ inputs.release_version }}
+          delete-branch: true
+          commit-message: "chore(gitops): promote hello-api ${{ inputs.release_version }}"
+          title: "chore(gitops): promote hello-api ${{ inputs.release_version }}"
+          body: >-
+            Promotes the exact staging image digest to production. Chart promotion:
+            `${{ inputs.promote_chart }}`. This PR does not rebuild artifacts; Argo
+            deploys only after it is reviewed and merged.
+          add-paths: ${{ env.PRODUCTION_RELEASE_FILE }}
+      - name: Create or retain the draft GitHub Release
+        if: steps.promotion_pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_REVISION: ${{ env.PROMOTED_SOURCE_REVISION }}
+        run: |
+          if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            gh release create "$RELEASE_VERSION" \
+              --target "$SOURCE_REVISION" \
+              --draft \
+              --generate-notes \
+              --title "$RELEASE_VERSION"
+          fi

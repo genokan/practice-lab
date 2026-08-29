@@ -90,16 +90,17 @@ updates the chart digest. Application image changes and chart changes are indepe
 
 ## Production promotion and releases
 
-Creating a draft release (or manually dispatching the release workflow) selects a
-known-good staging release. The workflow opens a production pull request on `main`.
-It copies the exact tested image digest and, only when requested, the chart digest.
-It never rebuilds either artifact.
+Manually dispatching the release workflow with a semantic release version selects a
+known-good staging release. The workflow opens a production pull request on `main`
+and creates a draft GitHub Release with generated notes. It copies the exact tested
+image digest and, only when requested, the chart digest. It never rebuilds either
+artifact.
 
-After the production pull request merges, Argo auto-syncs production and a smoke
-check confirms rollout health. The workflow then publishes the final GitHub Release
-with generated notes/changelog and records the image digest, chart digest, and source
-revisions. A failed rollout leaves the release as a draft and is rolled back by a
-reviewed production release-manifest revert.
+After the production pull request merges, Argo auto-syncs production and a local smoke
+check confirms rollout health. An operator publishes the draft release only after that
+verification, recording the image digest, chart digest, and source revisions. A failed
+rollout leaves the release as a draft and is rolled back by a reviewed production
+release-manifest revert.
 
 ## Chart and application evolution
 

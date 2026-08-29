@@ -3,7 +3,7 @@ name: Validate infrastructure and GitOps
 on:
   pull_request:
     paths:
-      - ".github/workflows/validate-infrastructure.yaml"
+      - ".github/workflows/**"
       - "bootstrap/**"
       - "charts/**"
       - "environments/**"
