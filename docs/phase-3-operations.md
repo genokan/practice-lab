@@ -30,6 +30,11 @@ same local Helm chart with separate values files. They create and use the
 small, version-pinned public nginx image solely to establish a known-good GitOps
 baseline before the Elixir application exists.
 
+The staging values enable a standard `Ingress` named `hello-staging.opsguy.io`. MB1
+proxies one LAN port to k3s Traefik; Caddy on pi5 terminates TLS and proxies that
+hostname to MB1. Future browser-facing services add an Ingress and Caddy hostname,
+not another MB1 relay.
+
 The chart supports an image digest already. Staging uses the first Phoenix application
 image by digest; production intentionally remains on the baseline until a promotion
 copies that exact digest without rebuilding it.

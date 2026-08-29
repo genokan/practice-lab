@@ -8,6 +8,10 @@ image:
 service:
   targetPort: 4000
 
+ingress:
+  enabled: true
+  host: hello-staging.opsguy.io
+
 resources:
   requests:
     cpu: 50m
