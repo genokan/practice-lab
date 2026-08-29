@@ -1,4 +1,5 @@
 ---
 resources:
   - workload-identities.yaml
+  - workload-auth-rbac.yaml
   - secret-stores.yaml
