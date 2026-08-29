@@ -1,0 +1,25 @@
+---
+# The Vault auth mount is configured without a static TokenReview JWT. Vault instead
+# uses the short-lived JWT presented at login for TokenReview, so each login identity
+# needs this narrowly scoped Kubernetes API permission.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-workload-auth-delegator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: vault-secrets
+    namespace: hello-staging
+  - kind: ServiceAccount
+    name: vault-workload
+    namespace: hello-staging
+  - kind: ServiceAccount
+    name: vault-secrets
+    namespace: hello-prod
+  - kind: ServiceAccount
+    name: vault-workload
+    namespace: hello-prod

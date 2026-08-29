@@ -30,6 +30,14 @@ roles in the existing `kubernetes-practice-lab` auth mount:
 The cert-manager roles remain certificate-issuance-only and cannot read these KV
 paths. Staging cannot read production and vice versa.
 
+The SecretStore TokenRequest includes both a Vault-specific audience and
+`https://kubernetes.default.svc.cluster.local`. The first binds the JWT to its Vault
+role; the second lets Vault use that JWT for Kubernetes TokenReview. Keep both.
+Because the Vault auth mount has no stored TokenReview JWT, the four login identities
+are deliberately bound to Kubernetes' `system:auth-delegator` ClusterRole. This is
+the minimum Kubernetes API access required for that short-lived, self-reviewing JWT
+model; it is not permission to read Secrets or administer the cluster.
+
 ## One-time Vault configuration
 
 After the tracked Kubernetes resources have been merged, run this from the repository
