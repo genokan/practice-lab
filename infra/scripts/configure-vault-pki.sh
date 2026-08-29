@@ -12,6 +12,7 @@ set -euo pipefail
 : "${VAULT_TOKEN:?Export a Vault operator token before running this script.}"
 
 vault_addr=${VAULT_ADDR:-https://vault.opsguy.io}
+vault_public_addr=${VAULT_PUBLIC_ADDR:-https://vault.opsguy.io}
 kubernetes_host=${KUBERNETES_HOST:-https://mb1.opsguy.io:6443}
 auth_mount=kubernetes-practice-lab
 pki_mount=practice-lab-pki
@@ -45,9 +46,10 @@ if ! vault auth list -format=json | jq -e --arg mount "$auth_mount/" 'has($mount
   vault auth enable -path="$auth_mount" kubernetes >/dev/null
 fi
 
-vault write "$auth_mount/config" \
+vault write "auth/$auth_mount/config" \
   kubernetes_host="$kubernetes_host" \
-  kubernetes_ca_cert="$kubernetes_ca" >/dev/null
+  kubernetes_ca_cert="$kubernetes_ca" \
+  disable_local_ca_jwt=true >/dev/null
 
 if ! vault secrets list -format=json | jq -e --arg mount "$pki_mount/" 'has($mount)' >/dev/null; then
   vault secrets enable -path="$pki_mount" pki >/dev/null
@@ -58,8 +60,8 @@ if ! vault secrets list -format=json | jq -e --arg mount "$pki_mount/" 'has($mou
 fi
 
 vault write "$pki_mount/config/urls" \
-  issuing_certificates="$vault_addr/v1/$pki_mount/ca" \
-  crl_distribution_points="$vault_addr/v1/$pki_mount/crl" >/dev/null
+  issuing_certificates="$vault_public_addr/v1/$pki_mount/ca" \
+  crl_distribution_points="$vault_public_addr/v1/$pki_mount/crl" >/dev/null
 
 vault write "$pki_mount/roles/argocd-edge" \
   allowed_domains=argo.opsguy.io \
@@ -85,14 +87,14 @@ path "$pki_mount/sign/argocd-server" {
 }
 POLICY
 
-vault write "$auth_mount/role/cert-manager-argocd-edge" \
+vault write "auth/$auth_mount/role/cert-manager-argocd-edge" \
   bound_service_account_names=vault-pki-edge-issuer \
   bound_service_account_namespaces="$namespace" \
   audience="vault://$namespace/vault-pki-edge" \
   policies=cert-manager-argocd-edge \
   ttl=1m >/dev/null
 
-vault write "$auth_mount/role/cert-manager-argocd-server" \
+vault write "auth/$auth_mount/role/cert-manager-argocd-server" \
   bound_service_account_names=vault-pki-server-issuer \
   bound_service_account_namespaces="$namespace" \
   audience="vault://$namespace/vault-pki-server" \
