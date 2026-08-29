@@ -29,7 +29,7 @@ spec:
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
           env:
-            - name: PRACTICE_LAB_ENVIRONMENT
+            - name: APP_ENV
               value: {{ .Values.environment | quote }}
             {{- range .Values.secretEnv }}
             - name: {{ .name }}

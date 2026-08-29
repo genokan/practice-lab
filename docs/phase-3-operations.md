@@ -30,9 +30,9 @@ same local Helm chart with separate values files. They create and use the
 small, version-pinned public nginx image solely to establish a known-good GitOps
 baseline before the Elixir application exists.
 
-The chart supports an image digest already. Phase 5 will replace the public image with
-the application image and set `image.digest` in each environment values file; a
-promotion will copy that digest from staging to production without rebuilding it.
+The chart supports an image digest already. Staging uses the first Phoenix application
+image by digest; production intentionally remains on the baseline until a promotion
+copies that exact digest without rebuilding it.
 
 External Secrets Operator is installed now, but no Vault role, policy, `SecretStore`,
 or `ExternalSecret` is created yet: the nginx baseline does not consume a secret.

@@ -1,6 +1,14 @@
 environment: staging
 
 image:
-  repository: nginxinc/nginx-unprivileged
-  tag: 1.27.5-alpine
-  digest: ""
+  repository: ghcr.io/genokan/practice-lab/hello-elixir
+  tag: sha-9be49e4
+  digest: sha256:781f640ee8fdcd7d078171284e83151a30947c67efa331e3eef118f6a570ee3e
+
+service:
+  targetPort: 4000
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "4000"
