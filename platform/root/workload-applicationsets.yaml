@@ -1,8 +1,7 @@
----
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: hello-api-delivery
+  name: workload-applicationsets
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -11,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/genokan/practice-lab.git
     targetRevision: main
-    path: gitops/appsets
+    path: argocd/applicationsets
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

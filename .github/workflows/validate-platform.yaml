@@ -1,15 +1,14 @@
-name: Validate infrastructure and GitOps
+name: Validate platform
 
 on:
   pull_request:
     paths:
       - ".github/workflows/**"
+      - "argocd/**"
       - "bootstrap/**"
-      - "charts/**"
-      - "environments/**"
-      - "gitops/**"
       - "infrastructure/**"
       - "platform/**"
+      - "values/**"
   workflow_dispatch:
 
 permissions:
@@ -25,12 +24,16 @@ jobs:
         with:
           terraform_version: 1.16.0
           terraform_wrapper: false
-      - name: Check formatting
-        run: terraform -chdir=infrastructure/terraform fmt -check
-      - name: Initialize without a backend
-        run: terraform -chdir=infrastructure/terraform init -backend=false -input=false
-      - name: Validate configuration
-        run: terraform -chdir=infrastructure/terraform validate -no-color
+      - run: terraform -chdir=infrastructure/terraform fmt -check
+      - run: terraform -chdir=infrastructure/terraform init -backend=false -input=false
+      - run: terraform -chdir=infrastructure/terraform validate -no-color
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.5"
+      - run: >-
+          go run github.com/terraform-docs/terraform-docs@v0.20.0 markdown table
+          --output-file README.md --output-mode replace infrastructure/terraform
+      - run: git diff --exit-code -- infrastructure/terraform/README.md
 
   ansible:
     name: Ansible
@@ -47,7 +50,7 @@ jobs:
       - name: Check YAML
         run: >-
           yamllint -d '{extends: default, rules: {line-length: disable}}'
-          bootstrap infrastructure/ansible platform environments
+          bootstrap infrastructure/ansible platform argocd values
       - name: Check Ansible style
         env:
           ANSIBLE_CONFIG: ${{ github.workspace }}/infrastructure/ansible/ansible.cfg
@@ -59,28 +62,12 @@ jobs:
           ansible-playbook --syntax-check --inventory localhost,
           infrastructure/ansible/playbooks/bootstrap-k3s.yaml
 
-  helm:
-    name: Helm and Kubernetes manifests
+  manifests:
+    name: Kubernetes manifests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: azure/setup-helm@v5
-        with:
-          version: v4.2.3
       - uses: azure/setup-kubectl@v4
         with:
           version: v1.36.2
-      - name: Lint chart
-        run: helm lint charts/hello-api
-      - name: Render staging chart
-        run: >-
-          helm template hello-staging charts/hello-api
-          --values environments/staging/values.yaml
-          > /tmp/hello-staging.yaml
-      - name: Render production chart
-        run: >-
-          helm template hello-production charts/hello-api
-          --values environments/production/values.yaml
-          > /tmp/hello-production.yaml
-      - name: Render root manifests
-        run: kubectl kustomize platform/root > /tmp/platform-root.yaml
+      - run: kubectl kustomize platform/root > /tmp/platform-root.yaml
