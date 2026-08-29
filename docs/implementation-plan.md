@@ -194,6 +194,8 @@ practice-lab/
 │       ├── validate-infrastructure.yaml
 │       ├── validate-application.yaml
 │       ├── build-image.yaml
+│       ├── publish-chart.yaml
+│       ├── update-staging-release.yaml
 │       └── promote.yaml
 ├── apps/
 │   └── hello-elixir/
@@ -218,18 +220,17 @@ practice-lab/
 │       └── inventory/          # generated/local files ignored
 ├── bootstrap/
 │   └── argocd/
-├── platform/
+├── platform/                       # initial add-ons and root app only
 │   ├── root/
-│   ├── applications/
 │   ├── secrets/
 │   └── observability/
 ├── charts/
-│   └── hello-elixir/
-├── environments/
-│   ├── staging/
-│   │   └── values.yaml
-│   └── production/
-│       └── values.yaml
+│   └── hello-api/                   # package and publish as a GHCR OCI chart
+├── gitops/
+│   ├── appsets/
+│   └── releases/
+│       ├── hello-api-staging.yaml
+│       └── hello-api-production.yaml
 ├── docs/
 ├── Makefile
 └── README.md
@@ -252,26 +253,31 @@ This provides deployment and promotion practice, but it is not true infrastructu
 failure-domain isolation. Document that limitation clearly in user-facing architecture
 documentation.
 
-### Build once, promote the same artifact
+### Build once, promote immutable artifacts
 
-Never rebuild an image during promotion.
+Never rebuild an image or a chart during promotion. The detailed target design is in
+[`docs/delivery-model.md`](delivery-model.md).
 
 1. An application pull request runs tests, linting, Helm rendering, and a non-pushing
    container build.
 2. Merge to `main` builds one `linux/arm64` image and pushes it to GHCR.
-3. Record the immutable image digest produced by the registry.
-4. A Git change updates only `environments/staging/values.yaml` to that digest.
-5. Argo reconciles staging.
-6. Run automated smoke checks and inspect Argo/Kubernetes health and telemetry.
-7. A manually initiated promotion workflow opens a pull request that copies the exact
-   staging digest into `environments/production/values.yaml`.
-8. Review and merge the production promotion pull request.
-9. Argo reconciles production from Git.
-10. Verify rollout, readiness, logs, metrics, and a user-facing request.
+3. Record the immutable image digest produced by the registry and its source revision.
+4. Publish Helm chart changes as immutable OCI artifacts and record their digests.
+5. A staging release-manifest pull request on `main` updates only the selected image
+   and/or chart digest.
+6. An ApplicationSet generates the staging Application and Argo reconciles it.
+7. Run automated smoke checks and inspect Argo/Kubernetes health and telemetry.
+8. A manually initiated promotion workflow opens a pull request that copies the exact
+   tested image and optionally chart digest into the production release manifest.
+9. Review and merge the production promotion pull request.
+10. Argo reconciles production from Git.
+11. Verify rollout, readiness, logs, metrics, and a user-facing request before
+    publishing the final GitHub Release.
 
 The Helm chart should support an image digest explicitly. Do not use `latest` and do
-not rely on mutable tags for promotion. A human-readable commit-SHA tag may also be
-published for convenience, but the environment values should select the digest.
+not rely on mutable tags for promotion. The application and chart may publish
+human-readable versions or commit-SHA tags for convenience, but release manifests
+select OCI digests.
 
 Production approval initially occurs at the pull request boundary. A GitHub
 `production` Environment with required reviewers may be added later to practice
