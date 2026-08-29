@@ -6,3 +6,5 @@ resources:
   - apps.yaml
   - observability.yaml
   - external-secrets.yaml
+  - vault-agent-injector.yaml
+  - vault.yaml

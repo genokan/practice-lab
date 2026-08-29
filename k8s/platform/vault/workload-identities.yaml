@@ -1,0 +1,29 @@
+---
+# External Secrets uses this identity only to request a short-lived Kubernetes JWT
+# and log in to its namespace's restricted Vault role.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-secrets
+  namespace: hello-staging
+---
+# Application charts select this identity when they opt into Vault Agent injection.
+# Keeping it separate from vault-secrets avoids giving a workload the controller's
+# SecretStore access path.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-workload
+  namespace: hello-staging
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-secrets
+  namespace: hello-prod
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-workload
+  namespace: hello-prod

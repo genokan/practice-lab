@@ -39,6 +39,16 @@ runtime. This keeps values out of Git while preserving standard Kubernetes behav
 Vault Agent Injector is complementary for workloads that need mounted, renewed secret
 files rather than a Kubernetes Secret.
 
+## Why the two Vault delivery paths use separate identities
+
+External Secrets and a workload solve different problems, even when both read the
+same environment-specific Vault path. The controller receives a dedicated
+`vault-secrets` identity solely to materialize standard Kubernetes Secrets. A pod
+that needs a renewable file receives a different `vault-workload` identity through
+Vault Agent Injector. This makes the audit trail intelligible and avoids binding a
+workload to the controller identity. Both identities are scoped by namespace and
+environment, and neither overlaps cert-manager's PKI-only roles.
+
 ## Why cert-manager and Traefik remain in the ingress path
 
 The lab keeps k3s's Traefik rather than introducing NGINX or a service mesh. It is a

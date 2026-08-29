@@ -68,7 +68,7 @@ complete ownership and promotion flow.
    normal `kubectl` access works from the Mac.
 2. **Platform services** — complete baseline: Argo CD, Traefik routing, Alloy,
    kube-state-metrics, and External Secrets Operator are installed.
-3. **Trusted Argo TLS and certificate lifecycle** — next:
+3. **Trusted Argo TLS and certificate lifecycle** — complete:
    - install cert-manager as an Argo-managed platform component;
    - configure the Vault PKI engine and Kubernetes auth with issuer-specific,
      least-privilege roles for cert-manager. cert-manager uses automatically renewed
@@ -88,12 +88,12 @@ complete ownership and promotion flow.
    [`practice-hello-api`](https://github.com/genokan/practice-hello-api) repository
    publishes OCI image and chart artifacts; its ApplicationSet and two values files
    live here.
-5. **Workload Vault integration** — configure distinct staging and prod policies/
+5. **Workload Vault integration** — complete baseline: distinct staging and prod policies/
    roles, namespace-scoped SecretStores, and the Vault Agent Injector. Secret values
    stay in Vault and are delivered as Kubernetes Secrets or injected files as
    appropriate. The limited cert-manager PKI-issuance access from phase 3 remains
    separate from workload access.
-6. **Delivery automation and failure practice** — add the GitHub App credentials and
+6. **Delivery automation and failure practice** — next: add the GitHub App credentials and
    workflows that open staging and prod values PRs, then add intentional rollout,
    ingress, secret, and resource-pressure failures after the happy path is repeatable.
 

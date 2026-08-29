@@ -1,0 +1,43 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-agent-injector
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: https://helm.releases.hashicorp.com
+    chart: vault
+    targetRevision: 0.34.0
+    helm:
+      releaseName: vault-agent-injector
+      values: |
+        global:
+          enabled: false
+          tlsDisable: false
+          externalVaultAddr: https://vault.opsguy.io
+        injector:
+          enabled: true
+          authPath: auth/kubernetes-practice-lab
+          image:
+            repository: hashicorp/vault-k8s
+            tag: 1.7.6
+          agentImage:
+            repository: hashicorp/vault
+            tag: 2.0.4
+        server:
+          enabled: false
+        csi:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
