@@ -3,7 +3,8 @@
 An intentionally small SRE interview practice environment built around Terraform,
 Ansible, k3s, Helm, Argo CD, GitHub Actions, and a simple Elixir application.
 
-The project is currently in the design and bootstrap phase. See the
+The current baseline is a single-node k3s cluster with Argo CD, light observability,
+and separate staging/production GitOps applications. See the
 [implementation plan](docs/implementation-plan.md) for the architecture, phased
 execution plan, promotion workflow, and acceptance criteria.
 
