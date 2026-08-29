@@ -1,0 +1,19 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: practice-lab-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/genokan/practice-lab.git
+    targetRevision: main
+    path: platform/root
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

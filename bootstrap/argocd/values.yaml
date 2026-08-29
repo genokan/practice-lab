@@ -1,0 +1,8 @@
+---
+# The chart version is pinned in docs/phase-3-operations.md.
+redis-ha:
+  enabled: false
+
+global:
+  logging:
+    format: text
