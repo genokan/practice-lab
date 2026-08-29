@@ -10,3 +10,6 @@ execution plan, promotion workflow, and acceptance criteria.
 
 The current VM provisioning commands and their safety boundaries are documented in
 [Phase 1 operations](docs/phase-1-operations.md).
+
+Pull-request checks and their explicit non-deployment boundary are documented in
+[Phase 4 operations](docs/phase-4-operations.md).

@@ -14,6 +14,7 @@ infrastructure/ansible/inventory/*.yml
 infrastructure/ansible/inventory/host_vars/
 infrastructure/ansible/inventory/group_vars/
 infrastructure/ansible/.local/
+.ansible/
 artifacts/
 kubeconfig/
 *.kubeconfig
