@@ -19,6 +19,11 @@ artifacts/
 kubeconfig/
 *.kubeconfig
 
+# Elixir build and dependency outputs are local-only.
+apps/*/_build/
+apps/*/deps/
+apps/*/.elixir_ls/
+
 # Credentials and local environment files must never enter the public repository.
 .env
 .env.*

@@ -13,3 +13,6 @@ The current VM provisioning commands and their safety boundaries are documented 
 
 Pull-request checks and their explicit non-deployment boundary are documented in
 [Phase 4 operations](docs/phase-4-operations.md).
+
+The initial Phoenix service lives in [apps/hello-elixir](apps/hello-elixir). It is
+safe to run without a database until environment-scoped Vault secrets are available.
