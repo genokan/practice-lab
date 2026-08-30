@@ -43,17 +43,19 @@ render Helm values; the values files remain Helm values only.
 
 ## Delivery and promotion
 
-1. A merge to an application's `main` runs only the relevant CD workflow:
-   **CD — Publish image and propose staging** for application/Docker inputs, or
-   **CD — Publish chart and propose staging** for `chart/**` inputs. A chart change
-   must include a chart-version bump before it can publish.
-2. The image workflow opens, records, and automatically squash-merges a staging PR
-   that changes only the image digest in `values/staging.yaml`. The chart workflow
-   does the same for the staging `chartRevision` in the ApplicationSet.
-3. Merging either staging PR makes Argo auto-sync the corresponding selection.
-4. Publishing a GitHub release runs **CD — Promote production**. It opens or updates
-   a **draft** prod PR that copies the tested staging image and chart digests to prod.
-5. Merging that PR makes Argo auto-sync prod. The release body is the application
+1. **Build and Publish** runs on pull requests and on application `main`. Pull
+   requests test the application, build the changed image without pushing it, and
+   lint/template/package a changed chart without publishing it. A chart change must
+   include a chart-version bump.
+2. On `main`, that same workflow publishes only the immutable image and/or OCI chart
+   whose inputs changed. It opens, records, and automatically squash-merges one
+   staging deployment PR containing the digest selections that changed.
+3. Merging that staging PR makes Argo auto-sync staging.
+4. **Deploy** runs when a GitHub release is published or when manually dispatched
+   with an environment and optional image/chart digests. A release copies the staged
+   selections into a **draft** prod PR; a manual staging deployment auto-merges its
+   PR, while a manual prod deployment remains draft.
+5. Merging a prod PR makes Argo auto-sync prod. The release body is the application
    release note; this repository records only the exact deployment selection.
 
 The application workflow uses the `MANIFESTS_TOKEN` fine-grained PAT, scoped only to

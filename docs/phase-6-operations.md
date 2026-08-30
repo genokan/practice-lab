@@ -2,15 +2,14 @@
 
 ## CI/CD flow
 
-`practice-hello-api` owns two CD workflows and its existing CI workflow:
+`practice-hello-api` owns two workflows:
 
 | Trigger | Workflow | Result |
 | --- | --- | --- |
-| Application/Docker pull request or main push | **CI — Validate application** | Tests the Phoenix app. It does not publish or deploy. |
-| Chart pull request or main push | **CI — Validate Helm chart** | Lints, templates, and regenerates Helm chart docs. It does not publish or deploy. |
-| Application/Docker merge to `main` | **CD — Publish image and propose staging** | Publishes an immutable image digest, records an image-only staging PR, then squash-merges it automatically. |
-| Chart merge to `main` | **CD — Publish chart and propose staging** | Requires a chart-version bump, publishes an immutable OCI chart digest, records a chart-only staging PR, then squash-merges it automatically. |
-| GitHub release published | **CD — Promote production** | Opens or updates a **draft** prod PR copying the exact staged image and chart digests. |
+| Pull request | **Build and Publish** | Tests the app, builds an affected image without pushing, and validates/packages an affected chart without publishing. |
+| Merge to `main` | **Build and Publish** | Repeats the builds, publishes only changed image/chart artifacts, and auto-merges one staging deployment PR. |
+| GitHub release | **Deploy** | Opens or updates a **draft** prod PR containing the exact staged digests. |
+| Manual dispatch | **Deploy** | Accepts `environment`, `image_digest`, and `chart_digest`; blank digests preserve the current selection. Staging auto-merges; prod remains draft. |
 
 The only cross-repository credential is `MANIFESTS_TOKEN`, a fine-grained PAT stored
 as an Actions secret in `practice-hello-api`. It has access only to this repository
@@ -21,8 +20,8 @@ person merges a draft production PR. It never builds artifacts and GitHub Action
 never reaches the homelab.
 
 Changing application code does not republish the chart, and changing the chart does
-not rebuild the image. A combined application/chart merge legitimately produces one
-image PR and one chart PR so each immutable selection is independently reviewable.
+not rebuild the image. A combined application/chart merge publishes both artifacts
+and produces one staging deployment PR containing both new digests.
 
 ## Intentional failure exercises
 
