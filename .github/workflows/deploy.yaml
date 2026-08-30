@@ -1,0 +1,117 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      application:
+        description: Application directory and ApplicationSet name
+        required: true
+        type: string
+      environment:
+        description: Deployment environment
+        required: true
+        type: string
+      source_environment:
+        description: Environment from which blank selections are copied
+        required: true
+        type: string
+      image_digest:
+        description: Optional image digest; blank preserves the selected digest
+        required: false
+        type: string
+      chart_digest:
+        description: Optional chart digest; blank preserves the selected digest
+        required: false
+        type: string
+      source_sha:
+        description: Caller commit that requested this deployment
+        required: false
+        type: string
+    secrets:
+      manifests_token:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.application }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: genokan/practice-lab
+          token: ${{ secrets.manifests_token }}
+          path: manifests
+          persist-credentials: false
+      - id: selection
+        name: Resolve deployment
+        env:
+          APPLICATION: ${{ inputs.application }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          SOURCE_ENVIRONMENT: ${{ inputs.source_environment }}
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+          CHART_DIGEST: ${{ inputs.chart_digest }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          case "$APPLICATION" in ''|*[!a-z0-9-]*) echo "Invalid application: $APPLICATION" >&2; exit 1;; esac
+          case "$ENVIRONMENT" in staging|prod) ;; *) echo "Invalid environment: $ENVIRONMENT" >&2; exit 1;; esac
+          case "$SOURCE_ENVIRONMENT" in staging|prod) ;; *) echo "Invalid source environment: $SOURCE_ENVIRONMENT" >&2; exit 1;; esac
+          values_path="manifests/k8s/apps/$APPLICATION/values/$SOURCE_ENVIRONMENT.yaml"
+          appset_path="manifests/k8s/apps/$APPLICATION/appset.yaml"
+          test -f "$values_path"
+          test -f "$appset_path"
+          selected_image="$(awk '/^  digest:/ { print $2 }' "$values_path")"
+          selected_chart="$(awk "/application: $APPLICATION-$SOURCE_ENVIRONMENT/{seen=1} seen && /chartRevision:/{print \$2; exit}" "$appset_path")"
+          image_digest="${IMAGE_DIGEST:-$selected_image}"
+          chart_digest="${CHART_DIGEST:-$selected_chart}"
+          for digest in "$image_digest" "$chart_digest"; do
+            case "$digest" in sha256:*) ;; *) echo "Selections must be SHA-256 digests" >&2; exit 1;; esac
+          done
+          echo "application=$APPLICATION" >> "$GITHUB_OUTPUT"
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "image_digest=$image_digest" >> "$GITHUB_OUTPUT"
+          echo "chart_digest=$chart_digest" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+      - name: Select image digest
+        uses: mikefarah/yq@v4.47.2
+        with:
+          cmd: >-
+            yq -i '.image.digest = "${{ steps.selection.outputs.image_digest }}"'
+            manifests/k8s/apps/${{ steps.selection.outputs.application }}/values/${{ steps.selection.outputs.environment }}.yaml
+      - name: Select chart digest
+        uses: mikefarah/yq@v4.47.2
+        with:
+          cmd: >-
+            yq -i '(.spec.generators[] | select(has("list")) | .list.elements[] |
+            select(.application == "${{ steps.selection.outputs.application }}-${{ steps.selection.outputs.environment }}") |
+            .chartRevision) = "${{ steps.selection.outputs.chart_digest }}"'
+            manifests/k8s/apps/${{ steps.selection.outputs.application }}/appset.yaml
+      - id: pull-request
+        name: Create deployment PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.manifests_token }}
+          path: manifests
+          branch: automation/${{ steps.selection.outputs.application }}-${{ steps.selection.outputs.environment }}
+          delete-branch: true
+          commit-message: "deploy: ${{ steps.selection.outputs.application }} ${{ steps.selection.outputs.environment }}"
+          title: "deploy: ${{ steps.selection.outputs.application }} ${{ steps.selection.outputs.environment }}"
+          draft: ${{ steps.selection.outputs.environment == 'prod' }}
+          body: |
+            Deploys immutable artifacts to `${{ steps.selection.outputs.environment }}`.
+
+            **Image digest:** `${{ steps.selection.outputs.image_digest }}`
+
+            **Chart digest:** `${{ steps.selection.outputs.chart_digest }}`
+
+            **Requested from:** `${{ steps.selection.outputs.source_sha || 'manual deployment' }}`
+      - if: steps.selection.outputs.environment == 'staging' && steps.pull-request.outputs.pull-request-number
+        name: Merge staging deployment PR
+        env:
+          GH_TOKEN: ${{ secrets.manifests_token }}
+        run: >-
+          gh pr merge "${{ steps.pull-request.outputs.pull-request-number }}"
+          --repo genokan/practice-lab --squash --delete-branch

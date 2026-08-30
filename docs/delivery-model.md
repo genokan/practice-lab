@@ -48,20 +48,23 @@ render Helm values; the values files remain Helm values only.
    lint/template/package a changed chart without publishing it. A chart change must
    include a chart-version bump.
 2. On `main`, that same workflow publishes only the immutable image and/or OCI chart
-   whose inputs changed. It opens, records, and automatically squash-merges one
-   staging deployment PR containing the digest selections that changed.
-3. Merging that staging PR makes Argo auto-sync staging.
-4. **Deploy** runs when a GitHub release is published or when manually dispatched
-   with an environment and optional image/chart digests. A release copies the staged
-   selections into a **draft** prod PR; a manual staging deployment auto-merges its
-   PR, while a manual prod deployment remains draft.
+   whose inputs changed, then calls this repository's reusable **Deploy** workflow.
+   Its application-side run visibly records the deployment steps and opens one
+   staging PR containing the digest selections that changed.
+3. The reusable workflow automatically squash-merges a staging PR. Argo then
+   auto-syncs staging.
+4. An application's **Deploy** workflow calls the same reusable workflow when a
+   GitHub release is published or when manually dispatched with an environment and
+   optional image/chart digests. A release copies the staged selections into a
+   **draft** prod PR; a manual staging deployment auto-merges its PR, while a manual
+   prod deployment remains draft.
 5. Merging a prod PR makes Argo auto-sync prod. The release body is the application
    release note; this repository records only the exact deployment selection.
 
-The application workflow uses the `MANIFESTS_TOKEN` fine-grained PAT, scoped only to
-this repository's Contents and Pull requests permissions. `GITHUB_TOKEN` cannot
-write to a different repository. A GitHub App can replace this token later without
-changing the delivery model.
+The application workflow passes `MANIFESTS_TOKEN` to the reusable workflow. The
+fine-grained PAT is scoped only to this repository's Contents and Pull requests
+permissions; `GITHUB_TOKEN` cannot write to a different repository. A GitHub App can
+replace this token later without changing the delivery model.
 
 Staging and prod normally select the same chart revision. Keeping the two immutable
 revisions independently in the ApplicationSet means a chart-template change can be
