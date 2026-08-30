@@ -21,6 +21,15 @@ kubectl apply -f infra/bootstrap/argocd/root-application.yaml
 kubectl get applications -n argocd
 ```
 
+The lab uses a 15-second reconciliation poll with no jitter so GitOps merges are
+noticed promptly without exposing an inbound GitHub webhook. After changing those
+Argo CD settings, restart the application controller and repo server:
+
+```sh
+kubectl -n argocd rollout restart statefulset/argocd-application-controller
+kubectl -n argocd rollout restart deployment/argocd-repo-server
+```
+
 ## Argo CD access
 
 `argo.opsguy.io` requires TLS on every hop:

@@ -7,6 +7,13 @@ global:
   logging:
     format: text
 
+# This is a small lab with few Applications. A short, deterministic poll keeps
+# auto-sync responsive when GitHub cannot reach the private homelab for webhooks.
+configs:
+  cm:
+    timeout.reconciliation: 15s
+    timeout.reconciliation.jitter: 0s
+
 # Traefik's Kubernetes Ingress provider reads service.* settings from the
 # backend Service. The CRD reference selects the Vault-CA-validated transport
 # for the argocd-server HTTPS endpoint.
