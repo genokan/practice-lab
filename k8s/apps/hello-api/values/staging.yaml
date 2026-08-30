@@ -1,25 +1,20 @@
 environment: staging
-
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
-  digest: sha256:2e18f58a7060c004a6d0973458be335c3e794d47c08522c8c418fc878ee1b73b
+  digest: sha256:02519440c75d2e5b298326f40d5cd10d8c5bf4315ea394bcb7acdcc4616dddef
   pullPolicy: IfNotPresent
-
 service:
   targetPort: 4000
-
 ingress:
   enabled: true
   host: hello-staging.opsguy.io
-
 resources:
   requests:
     cpu: 50m
     memory: 128Mi
   limits:
     memory: 256Mi
-
 podAnnotations:
   prometheus.io/scrape: "true"
   prometheus.io/path: /metrics
