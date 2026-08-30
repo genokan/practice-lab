@@ -8,16 +8,17 @@
 | --- | --- | --- |
 | Application/Docker pull request or main push | **CI — Validate application** | Tests the Phoenix app. It does not publish or deploy. |
 | Chart pull request or main push | **CI — Validate Helm chart** | Lints, templates, and regenerates Helm chart docs. It does not publish or deploy. |
-| Application/Docker merge to `main` | **CD — Publish image and propose staging** | Publishes an immutable image digest and opens or updates an image-only staging PR. |
-| Chart merge to `main` | **CD — Publish chart and propose staging** | Requires a chart-version bump, publishes an immutable OCI chart digest, and opens or updates a chart-only staging PR. |
-| GitHub release published | **CD — Promote production** | Opens or updates a prod PR copying the exact staged image and chart digests. |
+| Application/Docker merge to `main` | **CD — Publish image and propose staging** | Publishes an immutable image digest, records an image-only staging PR, then squash-merges it automatically. |
+| Chart merge to `main` | **CD — Publish chart and propose staging** | Requires a chart-version bump, publishes an immutable OCI chart digest, records a chart-only staging PR, then squash-merges it automatically. |
+| GitHub release published | **CD — Promote production** | Opens or updates a **draft** prod PR copying the exact staged image and chart digests. |
 
 The only cross-repository credential is `MANIFESTS_TOKEN`, a fine-grained PAT stored
 as an Actions secret in `practice-hello-api`. It has access only to this repository
 and only Contents/Pull requests write permissions. It has no cluster or Vault access.
 
-Argo CD auto-syncs only after a person merges the generated values PR. It never
-builds artifacts and GitHub Actions never reaches the homelab.
+Argo CD auto-syncs after the staging workflow merges its generated PR or after a
+person merges a draft production PR. It never builds artifacts and GitHub Actions
+never reaches the homelab.
 
 Changing application code does not republish the chart, and changing the chart does
 not rebuild the image. A combined application/chart merge legitimately produces one

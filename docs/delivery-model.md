@@ -47,12 +47,12 @@ render Helm values; the values files remain Helm values only.
    **CD — Publish image and propose staging** for application/Docker inputs, or
    **CD — Publish chart and propose staging** for `chart/**` inputs. A chart change
    must include a chart-version bump before it can publish.
-2. The image workflow opens or updates a staging PR that changes only the image digest
-   in `values/staging.yaml`. The chart workflow opens or updates a staging PR that
-   changes only the staging `chartRevision` in the ApplicationSet.
-3. Merging either PR makes Argo auto-sync the corresponding staging selection.
+2. The image workflow opens, records, and automatically squash-merges a staging PR
+   that changes only the image digest in `values/staging.yaml`. The chart workflow
+   does the same for the staging `chartRevision` in the ApplicationSet.
+3. Merging either staging PR makes Argo auto-sync the corresponding selection.
 4. Publishing a GitHub release runs **CD — Promote production**. It opens or updates
-   a prod PR that copies the tested staging image and chart digests to prod.
+   a **draft** prod PR that copies the tested staging image and chart digests to prod.
 5. Merging that PR makes Argo auto-sync prod. The release body is the application
    release note; this repository records only the exact deployment selection.
 
