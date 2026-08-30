@@ -122,4 +122,4 @@ jobs:
           GH_TOKEN: ${{ secrets.manifests_token }}
         run: >-
           gh pr merge "${{ steps.pull-request.outputs.pull-request-number }}"
-          --repo genokan/practice-lab --squash --delete-branch
+          --repo genokan/practice-lab --squash --delete-branch --admin
