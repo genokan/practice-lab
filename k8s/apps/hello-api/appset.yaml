@@ -14,7 +14,7 @@ spec:
             namespace: hello-staging
             releaseName: hello-api-staging
             valuesFile: k8s/apps/hello-api/values/staging.yaml
-            chartRevision: sha256:e41ca8b7bb634eecba2978e901c4a8786cc18b173fe86ea8484066fce8d0d30a
+            chartRevision: sha256:accc92df3a91e39558eb935f8d1f4b9718e5c185a3eb472b1426098d99113f2f
           - application: hello-api-prod
             namespace: hello-prod
             releaseName: hello-api-prod
