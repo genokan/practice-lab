@@ -1,5 +1,9 @@
 environment: staging
 replicaCount: 2
+lab:
+  enabled: true
+  maxDurationSeconds: 300
+  maxLatencyMilliseconds: 5000
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
