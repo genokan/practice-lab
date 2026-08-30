@@ -1,5 +1,7 @@
 environment: production
 replicaCount: 3
+lab:
+  enabled: false
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
