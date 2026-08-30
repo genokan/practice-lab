@@ -1,4 +1,4 @@
-name: Validate platform
+name: Validate Infra
 
 on:
   pull_request:

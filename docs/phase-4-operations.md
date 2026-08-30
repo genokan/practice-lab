@@ -1,8 +1,7 @@
-# Phase 4 operations: platform pull-request validation
+# Phase 4 operations: infrastructure pull-request checks
 
-The platform validation workflow is read-only. It runs on pull requests that change
-Terraform, Ansible, Argo bootstrap, or platform manifests; it can also be started
-manually.
+**Validate Infra** is read-only. It runs on pull requests that change Terraform,
+Ansible, Argo bootstrap, or Kubernetes manifests; it can also be started manually.
 
 - **Terraform** checks formatting, initializes with no backend, and validates the
   configuration. It never connects to MB1.
