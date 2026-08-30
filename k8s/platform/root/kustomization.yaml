@@ -3,7 +3,7 @@ resources:
   - cert-manager.yaml
   - tls.yaml
   - argocd-server-ingress.yaml
-  - apps.yaml
+  - appsets.yaml
   - observability.yaml
   - external-secrets.yaml
   - vault-agent-injector.yaml
