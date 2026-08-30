@@ -4,6 +4,9 @@ lab:
   enabled: true
   maxDurationSeconds: 300
   maxLatencyMilliseconds: 5000
+load:
+  enabled: true
+  targetUrl: http://hello-api-staging-hello-api
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
