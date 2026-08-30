@@ -11,7 +11,7 @@ manually.
 - **Kubernetes manifests** render the Argo root Kustomization. They never contact the
   cluster.
 
-Application source, chart lint/template checks, `helm-docs`, image builds, OCI chart
-publishing, and application-specific promotion workflows belong in each application
-repository. Those workflows update this repository only through reviewed pull
-requests.
+Application source, chart lint/template checks, `helm-docs`, image builds, and OCI
+chart publishing belong in each application repository. Their application-side
+workflows call this repository's reusable deployment workflow, which writes the
+reviewable manifest pull request.

@@ -7,13 +7,14 @@
 | Trigger | Workflow | Result |
 | --- | --- | --- |
 | Pull request | **Build and Publish** | Tests the app, builds an affected image without pushing, and validates/packages an affected chart without publishing. |
-| Merge to `main` | **Build and Publish** | Repeats the builds, publishes only changed image/chart artifacts, and auto-merges one staging deployment PR. |
-| GitHub release | **Deploy** | Opens or updates a **draft** prod PR containing the exact staged digests. |
-| Manual dispatch | **Deploy** | Accepts `environment`, `image_digest`, and `chart_digest`; blank digests preserve the current selection. Staging auto-merges; prod remains draft. |
+| Merge to `main` | **Build and Publish** | Repeats the builds, publishes only changed image/chart artifacts, then calls the reusable **Deploy** workflow. Its job graph shows the staging deployment. |
+| GitHub release | **Deploy** | Calls the reusable **Deploy** workflow, which opens or updates a **draft** prod PR containing the exact staged digests. |
+| Manual dispatch | **Deploy** | Calls the reusable workflow with `environment`, `image_digest`, and `chart_digest`; blank digests preserve the current selection. Staging auto-merges; prod remains draft. |
 
 The only cross-repository credential is `MANIFESTS_TOKEN`, a fine-grained PAT stored
-as an Actions secret in `practice-hello-api`. It has access only to this repository
-and only Contents/Pull requests write permissions. It has no cluster or Vault access.
+as an Actions secret in `practice-hello-api`. The caller passes it to the reusable
+workflow; it has access only to this repository and only Contents/Pull requests write
+permissions. It has no cluster or Vault access.
 
 Argo CD auto-syncs after the staging workflow merges its generated PR or after a
 person merges a draft production PR. It never builds artifacts and GitHub Actions
