@@ -70,10 +70,16 @@ jobs:
           for digest in "$image_digest" "$chart_digest"; do
             case "$digest" in sha256:*) ;; *) echo "Selections must be SHA-256 digests" >&2; exit 1;; esac
           done
+          image_short="${image_digest#sha256:}"
+          image_short="${image_short:0:12}"
+          chart_short="${chart_digest#sha256:}"
+          chart_short="${chart_short:0:12}"
           echo "application=$APPLICATION" >> "$GITHUB_OUTPUT"
           echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
           echo "image_digest=$image_digest" >> "$GITHUB_OUTPUT"
           echo "chart_digest=$chart_digest" >> "$GITHUB_OUTPUT"
+          echo "image_short=$image_short" >> "$GITHUB_OUTPUT"
+          echo "chart_short=$chart_short" >> "$GITHUB_OUTPUT"
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
       - name: Select image digest
         uses: mikefarah/yq@v4.47.2
@@ -98,7 +104,9 @@ jobs:
           branch: automation/${{ steps.selection.outputs.application }}-${{ steps.selection.outputs.environment }}
           delete-branch: true
           commit-message: "deploy: ${{ steps.selection.outputs.application }} ${{ steps.selection.outputs.environment }}"
-          title: "deploy: ${{ steps.selection.outputs.application }} ${{ steps.selection.outputs.environment }}"
+          title: >-
+            deploy: ${{ steps.selection.outputs.application }} ${{ steps.selection.outputs.environment }}
+            image ${{ steps.selection.outputs.image_short }} chart ${{ steps.selection.outputs.chart_short }}
           draft: ${{ steps.selection.outputs.environment == 'prod' }}
           body: |
             Deploys immutable artifacts to `${{ steps.selection.outputs.environment }}`.
