@@ -19,7 +19,7 @@ spec:
             namespace: hello-prod
             releaseName: hello-api-prod
             valuesFile: k8s/apps/hello-api/values/prod.yaml
-            chartRevision: sha256:a7402824c02a6e8d94a0ef53666761ce64ddbc2fc316846c2331d1caccd30c74
+            chartRevision: sha256:642e07e5d794ef50d8e45a067a8060b241850658ece9ff1c5f180d36d75ba22f
   template:
     metadata:
       name: '{{ .application }}'
