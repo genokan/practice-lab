@@ -1,4 +1,5 @@
 environment: staging
+replicaCount: 3
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
