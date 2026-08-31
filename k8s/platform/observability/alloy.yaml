@@ -158,15 +158,15 @@ spec:
                 targets = discovery.kubernetes.kubelets.targets
 
                 rule {
-                  source_labels = ["__meta_kubernetes_node_address_InternalIP"]
-                  regex         = "(.+)"
-                  target_label  = "__address__"
-                  replacement   = "$1:10250"
+                  target_label = "__address__"
+                  replacement  = "kubernetes.default.svc:443"
                 }
 
                 rule {
-                  target_label = "__metrics_path__"
-                  replacement  = "/metrics/cadvisor"
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  regex         = "(.+)"
+                  target_label  = "__metrics_path__"
+                  replacement   = "/api/v1/nodes/$1/proxy/metrics/cadvisor"
                 }
               }
 
@@ -201,9 +201,6 @@ spec:
                 scrape_interval   = "10s"
                 scheme            = "https"
                 bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-                tls_config {
-                  insecure_skip_verify = true
-                }
                 forward_to = [prometheus.relabel.hello_api_cadvisor.receiver]
               }
 
