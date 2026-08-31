@@ -201,6 +201,9 @@ spec:
                 scrape_interval   = "10s"
                 scheme            = "https"
                 bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                }
                 forward_to = [prometheus.relabel.hello_api_cadvisor.receiver]
               }
 
