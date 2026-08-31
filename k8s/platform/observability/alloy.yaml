@@ -135,6 +135,66 @@ spec:
                 forward_to      = [prometheus.remote_write.homelab.receiver]
               }
 
+              // cAdvisor comes from the kubelet. Keep only hello-api containers so
+              // this lab gains CPU, throttling, and memory evidence without making
+              // every cluster workload an implicit Prometheus target.
+              discovery.kubernetes "kubelets" {
+                role = "node"
+              }
+
+              discovery.relabel "kubelet_cadvisor" {
+                targets = discovery.kubernetes.kubelets.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_node_address_InternalIP"]
+                  regex         = "(.+)"
+                  target_label  = "__address__"
+                  replacement   = "$1:10250"
+                }
+
+                rule {
+                  target_label = "__metrics_path__"
+                  replacement  = "/metrics/cadvisor"
+                }
+              }
+
+              prometheus.relabel "hello_api_cadvisor" {
+                forward_to = [prometheus.remote_write.homelab.receiver]
+
+                rule {
+                  source_labels = ["namespace"]
+                  regex         = "hello-(staging|prod)"
+                  action        = "keep"
+                }
+
+                rule {
+                  source_labels = ["container"]
+                  regex         = "hello"
+                  action        = "keep"
+                }
+
+                rule {
+                  target_label = "cluster"
+                  replacement  = "practice-lab"
+                }
+
+                rule {
+                  target_label = "job"
+                  replacement  = "kubelet-cadvisor"
+                }
+              }
+
+              prometheus.scrape "kubelet_cadvisor" {
+                targets           = discovery.relabel.kubelet_cadvisor.output
+                scrape_interval   = "10s"
+                scheme            = "https"
+                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  insecure_skip_verify = true
+                }
+                forward_to = [prometheus.relabel.hello_api_cadvisor.receiver]
+              }
+
               prometheus.remote_write "homelab" {
                 endpoint {
                   url = "http://192.168.4.10:9090/api/v1/write"
