@@ -14,7 +14,7 @@ load:
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
-  digest: sha256:185074c275b2205947ec66b95f5c92a22367c19e0328e5e78ecd06e7724d4c71
+  digest: sha256:883039481e8a487de0f8ae1b6c01d667291984ffd1c6a5cea46e853c972c06e1
   pullPolicy: IfNotPresent
 service:
   targetPort: 4000
