@@ -4,8 +4,12 @@ lab:
   enabled: true
   maxDurationSeconds: 300
   maxLatencyMilliseconds: 5000
+  maxCpuWorkers: 8
+  maxMemoryMiB: 512
 load:
   enabled: true
+  ui:
+    enabled: true
   targetUrl: http://hello-api-staging-hello-api
 image:
   repository: ghcr.io/genokan/practice-hello-api
