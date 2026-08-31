@@ -2,5 +2,6 @@
 resources:
   - namespace.yaml
   - alloy.yaml
+  - alloy-kubelet-proxy-rbac.yaml
   - kube-state-metrics.yaml
   - node-exporter.yaml
