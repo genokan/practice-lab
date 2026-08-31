@@ -77,6 +77,18 @@ spec:
                 forward_to = [prometheus.remote_write.homelab.receiver]
               }
 
+              prometheus.scrape "node_exporter" {
+                targets = [{
+                  "__address__" = "node-exporter.observability.svc.cluster.local:9100",
+                  "cluster"     = "practice-lab",
+                  "instance"    = "practice-cp-1",
+                  "job"         = "node-exporter",
+                  "node"        = "practice-cp-1",
+                }]
+                scrape_interval = "10s"
+                forward_to      = [prometheus.remote_write.homelab.receiver]
+              }
+
               // The application chart marks its Pods with app.kubernetes.io/name=hello-api
               // and exposes port 4000. Scrape only those Pods every 10 seconds: broad
               // annotation-based discovery would make every future workload an implicit
