@@ -23,8 +23,6 @@ spec:
         app.kubernetes.io/part-of: practice-lab
     spec:
       serviceAccountName: node-exporter
-      hostNetwork: true
-      hostPID: true
       containers:
         - name: node-exporter
           image: quay.io/prometheus/node-exporter:v1.9.1
@@ -36,7 +34,6 @@ spec:
           ports:
             - name: metrics
               containerPort: 9100
-              hostPort: 9100
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
