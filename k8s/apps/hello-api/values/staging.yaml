@@ -11,6 +11,8 @@ load:
   ui:
     enabled: true
   targetUrl: http://hello-api-staging-hello-api
+failureExercises:
+  enabled: true
 image:
   repository: ghcr.io/genokan/practice-hello-api
   tag: ""
